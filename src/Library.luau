@@ -2532,7 +2532,7 @@ do
         fade.Parent = WindowFrame
 
         local gradient = Instance.new("UIGradient")
-        gradient.Rotation = 0
+        gradient.Rotation = 90
         gradient.Transparency = NumberSequence.new({
             NumberSequenceKeypoint.new(0, 1),
             NumberSequenceKeypoint.new(0.45, 0.75),
