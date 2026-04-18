@@ -1,0 +1,3 @@
+Backup version: v001
+Created: 2026-04-17 19:36:07
+Files: src/Library.luau, src/Preview.client.lua, src/Example.luau, README.md, DOCS.md, PLAN.md, llms-full.txt
