@@ -1186,6 +1186,7 @@ function Button.new(props)
 
     local self = setmetatable(Control.new("Button", props), Button)
     self.Text = tostring(props.Text or "Button")
+    self.ButtonText = tostring(props.ButtonText or "")
     self.Tooltip = props.Tooltip
     self.DisabledTooltip = props.DisabledTooltip
     self.Disabled = not not props.Disabled
@@ -1265,6 +1266,16 @@ function Button:SetText(text)
     end
 
     self.Text = text
+    self.RenderHook:Fire("VisualStateChanged")
+end
+
+function Button:SetButtonText(text)
+    text = tostring(text or "")
+    if self.ButtonText == text then
+        return
+    end
+
+    self.ButtonText = text
     self.RenderHook:Fire("VisualStateChanged")
 end
 
@@ -3545,6 +3556,12 @@ Library:RegisterControlRenderer("Button", function(control)
     pill.BorderSizePixel = 0
     pill.AutoButtonColor = false
     pill.Text = ""
+    pill.TextSize = 11
+    pill.Font = Enum.Font.GothamMedium
+    pill.TextColor3 = Library.Theme.Text.Secondary
+    pill.TextXAlignment = Enum.TextXAlignment.Center
+    pill.TextYAlignment = Enum.TextYAlignment.Center
+    pill.TextTruncate = Enum.TextTruncate.AtEnd
     pill.Parent = root
 
     local pillCorner = Instance.new("UICorner")
@@ -3596,12 +3613,19 @@ Library:RegisterControlRenderer("Button", function(control)
 
         root.Visible = control.Visible
         label.Text = control.Text
+        pill.Text = control.ButtonText
 
         local labelColor = isDisabled and Library.Theme.Text.Secondary
             or (isRisky and Library.Theme.Status.Error or Library.Theme.Text.Primary)
         tweenProperty(label, duration, {
             TextColor3 = labelColor,
             TextTransparency = isDisabled and 0.45 or 0,
+        })
+
+        local pillTextColor = isDisabled and Library.Theme.Text.Muted or Library.Theme.Text.Secondary
+        tweenProperty(pill, duration, {
+            TextColor3 = pillTextColor,
+            TextTransparency = isDisabled and 0.5 or 0,
         })
 
         if isPending then
@@ -6342,7 +6366,13 @@ function RuntimeHelpers.BeginGroupBoxDrag(groupBox, inputPosition)
     root.Parent = ScreenGui
     root.Size = UDim2.fromOffset(absSize.X, absSize.Y)
     root.Position = UDim2.fromOffset(localRootX, localRootY)
-    root.ZIndex = 10
+
+    for _, obj in ipairs(root:GetDescendants()) do
+        if obj:IsA("GuiObject") then
+            obj.ZIndex = obj.ZIndex + 100
+        end
+    end
+    root.ZIndex = 100
 
     RuntimeHelpers.UpdateDragPlaceholder()
 end
@@ -6426,6 +6456,11 @@ function RuntimeHelpers.EndGroupBoxDrag()
         end
 
         root.Size = UDim2.fromScale(1, 0)
+        for _, obj in ipairs(root:GetDescendants()) do
+            if obj:IsA("GuiObject") then
+                obj.ZIndex = obj.ZIndex - 100
+            end
+        end
         root.ZIndex = 1
         root.Parent = ColumnFrames[targetColumn]
         root.LayoutOrder = targetLayoutOrder
