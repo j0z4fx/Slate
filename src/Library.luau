@@ -125,6 +125,11 @@ local Const = {
     Column = {
         FadeHeight = 52,
     },
+    Sidebar = {
+        ButtonSize         = 40,
+        ButtonGap          = 4,
+        ButtonCornerRadius = 8,
+    },
     Execution = {
         RegistryKey  = "__SlateActiveExecution_Library",
         GuiPrefix    = "SlateUI_",
@@ -157,11 +162,26 @@ Library.Theme = {
     }
 }
 
-local CoreGui = cloneref and cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
-local GuiService = cloneref and cloneref(game:GetService("GuiService")) or game:GetService("GuiService")
-local UserInputService = cloneref and cloneref(game:GetService("UserInputService")) or game:GetService("UserInputService")
-local RunService = cloneref and cloneref(game:GetService("RunService")) or game:GetService("RunService")
-local TweenService = cloneref and cloneref(game:GetService("TweenService")) or game:GetService("TweenService")
+local _cloneref = cloneref or clonereference or function(x) return x end
+local _protectgui = protectgui or (syn and syn.protect_gui) or (gethui and function(gui)
+    gui.Parent = gethui()
+end) or function() end
+local newcclosure = newcclosure or function(f) return f end
+
+local function GetService(name)
+    local ok, svc = pcall(function() return game:GetService(name) end)
+    return ok and _cloneref(svc) or nil
+end
+
+local CoreGui          = GetService("CoreGui")
+local GuiService       = GetService("GuiService")
+local Players          = GetService("Players")
+local RunService       = GetService("RunService")
+local TweenService     = GetService("TweenService")
+local UserInputService = GetService("UserInputService")
+local HttpService      = GetService("HttpService")
+
+local LocalPlayer = Players and Players.LocalPlayer
 
 local Connections = {}
 
@@ -2445,9 +2465,7 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui:SetAttribute(Const.Execution.GuiAttribute, true)
 
-if syn and syn.protect_gui then
-    syn.protect_gui(ScreenGui)
-end
+_protectgui(ScreenGui)
 
 ScreenGui.Parent = CoreGui
 Library.ScreenGui = ScreenGui
@@ -2489,6 +2507,33 @@ SidebarFrame.Parent = WindowFrame
 local SidebarCorner = Instance.new("UICorner")
 SidebarCorner.CornerRadius = UDim.new(0, Const.Window.SidebarRadius)
 SidebarCorner.Parent = SidebarFrame
+
+-- Container for user-added tab buttons (top of sidebar)
+local SidebarTopList = Instance.new("Frame")
+SidebarTopList.Name = "TopList"
+SidebarTopList.Size = UDim2.new(1, 0, 1, -(Const.Sidebar.ButtonSize + 20))
+SidebarTopList.Position = UDim2.new(0, 0, 0, 10)
+SidebarTopList.BackgroundTransparency = 1
+SidebarTopList.BorderSizePixel = 0
+SidebarTopList.ClipsDescendants = false
+SidebarTopList.Parent = SidebarFrame
+
+local SidebarTopLayout = Instance.new("UIListLayout")
+SidebarTopLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarTopLayout.Padding = UDim.new(0, Const.Sidebar.ButtonGap)
+SidebarTopLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SidebarTopLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+SidebarTopLayout.Parent = SidebarTopList
+
+-- Settings tab button slot (pinned to bottom of sidebar)
+local SidebarSettingsSlot = Instance.new("Frame")
+SidebarSettingsSlot.Name = "SettingsSlot"
+SidebarSettingsSlot.AnchorPoint = Vector2.new(0.5, 1)
+SidebarSettingsSlot.Position = UDim2.new(0.5, 0, 1, -10)
+SidebarSettingsSlot.Size = UDim2.fromOffset(Const.Sidebar.ButtonSize, Const.Sidebar.ButtonSize)
+SidebarSettingsSlot.BackgroundTransparency = 1
+SidebarSettingsSlot.BorderSizePixel = 0
+SidebarSettingsSlot.Parent = SidebarFrame
 
 local columnSize = UDim2.new(1 / 3, -(100 / 3), 1, -16)
 
@@ -6182,12 +6227,76 @@ Library:RegisterControlRenderer("Dropdown", function(control)
     }
 end)
 
-local ActiveTab = Tab.new(Library, Const.GroupBox.DefaultTabName)
-RegisterComponent(ActiveTab)
-Renderer:BindTab(ActiveTab)
+Library.Tabs = {}  -- { { Tab=tab, Button=btn } }
+Library.ActiveTab = nil
+Library.Tab = nil
 
-Library.ActiveTab = ActiveTab
-Library.Tab = ActiveTab
+local function MakeTabButton(parent)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.fromOffset(Const.Sidebar.ButtonSize, Const.Sidebar.ButtonSize)
+    btn.BackgroundColor3 = Library.Theme.Surface.S1
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.Text = ""
+    btn.Parent = parent
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, Const.Sidebar.ButtonCornerRadius)
+    corner.Parent = btn
+    return btn
+end
+
+local function SetTabButtonActive(btn, active)
+    TweenService:Create(btn, TweenInfo.new(0.12, Enum.EasingStyle.Quint), {
+        BackgroundColor3 = active and Library.Theme.Status.Accent or Library.Theme.Surface.S1,
+    }):Play()
+end
+
+function Library:SwitchTab(targetTab)
+    if self.ActiveTab == targetTab then return end
+    for groupBox, state in pairs(Renderer.GroupBoxes) do
+        if state.Root and state.Root.Parent ~= ScreenGui then
+            state.Root.Visible = (groupBox.Tab == targetTab)
+        end
+    end
+    for _, entry in ipairs(self.Tabs) do
+        SetTabButtonActive(entry.Button, entry.Tab == targetTab)
+    end
+    self.ActiveTab = targetTab
+    self.Tab = targetTab
+end
+
+function Library:AddTab(name)
+    local tab = Tab.new(self, name)
+    RegisterComponent(tab)
+    Renderer:BindTab(tab)
+
+    local btn = MakeTabButton(SidebarTopList)
+    btn.Name = "Tab_" .. tostring(name)
+    btn.LayoutOrder = #self.Tabs + 1
+
+    local entry = { Tab = tab, Button = btn }
+    table.insert(self.Tabs, entry)
+
+    TrackConnection(btn.MouseButton1Click:Connect(newcclosure(function()
+        self:SwitchTab(tab)
+    end)))
+
+    if not self.ActiveTab then
+        self.ActiveTab = tab
+        self.Tab = tab
+        btn.BackgroundColor3 = Library.Theme.Status.Accent
+    else
+        -- newly added tabs start invisible until switched to
+        for _, groupBox in ipairs(tab.GroupBoxes) do
+            local state = Renderer.GroupBoxes[groupBox]
+            if state and state.Root then
+                state.Root.Visible = false
+            end
+        end
+    end
+
+    return tab
+end
 
 function Library:GetActiveTab()
     return self.ActiveTab
@@ -6195,6 +6304,12 @@ end
 
 function Library:AddGroupBox(name, columnName)
     return self.ActiveTab:AddGroupBox(name, columnName)
+end
+
+function Library:ToggleVisibility()
+    if WindowFrame then
+        WindowFrame.Visible = not WindowFrame.Visible
+    end
 end
 
 local RuntimeState = {
@@ -6520,7 +6635,9 @@ function RuntimeHelpers.Cleanup()
 
     CloseActiveDropdown()
 
-    ActiveTab:Destroy()
+    for _, entry in ipairs(Library.Tabs) do
+        entry.Tab:Destroy()
+    end
 
     if RuntimeState.resizeHandleTween then
         RuntimeState.resizeHandleTween:Cancel()
@@ -6694,6 +6811,71 @@ TrackConnection(ScreenGui.Destroying:Connect(function()
     RuntimeHelpers.Cleanup()
 end))
 
+local CONFIG_FOLDER = "Slate"
+local CONFIG_EXT    = ".json"
+
+local function HasFilesystem()
+    return type(writefile) == "function"
+        and type(readfile)  == "function"
+        and type(isfile)    == "function"
+        and type(isfolder)  == "function"
+        and type(makefolder) == "function"
+end
+
+function Library:SaveConfig(name)
+    if not HasFilesystem() or not HttpService then return end
+    if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
+    local data = {}
+    for key, component in pairs(Library.Registry.Named.Toggles) do
+        data[key] = component.Value
+    end
+    for key, component in pairs(Library.Registry.Named.Options) do
+        local v = component.Value
+        if typeof(v) == "Color3" then
+            data[key] = { _t = "Color3", r = v.R, g = v.G, b = v.B }
+        elseif typeof(v) == "EnumItem" then
+            data[key] = { _t = "Enum", v = tostring(v) }
+        elseif typeof(v) == "table" then
+            data[key] = v
+        else
+            data[key] = v
+        end
+    end
+    local ok, encoded = pcall(function() return HttpService:JSONEncode(data) end)
+    if ok then
+        writefile(CONFIG_FOLDER .. "/" .. tostring(name) .. CONFIG_EXT, encoded)
+    end
+end
+
+function Library:LoadConfig(name)
+    if not HasFilesystem() or not HttpService then return end
+    local path = CONFIG_FOLDER .. "/" .. tostring(name) .. CONFIG_EXT
+    if not isfile(path) then return end
+    local raw = readfile(path)
+    local ok, data = pcall(function() return HttpService:JSONDecode(raw) end)
+    if not ok or type(data) ~= "table" then return end
+    for key, value in pairs(data) do
+        local toggle = Library.Toggles[key]
+        if toggle then
+            pcall(function() toggle:SetValue(value) end)
+            continue
+        end
+        local option = Library.Options[key]
+        if option then
+            pcall(function()
+                if type(value) == "table" and value._t == "Color3" then
+                    option:SetValue(Color3.new(value.r, value.g, value.b))
+                elseif type(value) == "table" and value._t == "Enum" then
+                    -- KeyPicker / EnumItem — pass the string, control validates
+                    option:SetValue(value.v)
+                else
+                    option:SetValue(value)
+                end
+            end)
+        end
+    end
+end
+
 function Library:Destroy()
     if self._destroyed then
         return
@@ -6706,6 +6888,92 @@ function Library:Destroy()
     if ScreenGui.Parent then
         ScreenGui:Destroy()
     end
+end
+
+-- ── Built-in Settings Tab ────────────────────────────────────────────────────
+do
+    local settingsTab = Tab.new(Library, "_Settings")
+    RegisterComponent(settingsTab)
+    Renderer:BindTab(settingsTab)
+
+    local settingsBtn = MakeTabButton(SidebarSettingsSlot)
+    settingsBtn.Name = "Tab_Settings"
+    settingsBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+    settingsBtn.Position = UDim2.fromScale(0.5, 0.5)
+    settingsBtn.Size = UDim2.fromOffset(Const.Sidebar.ButtonSize, Const.Sidebar.ButtonSize)
+
+    local settingsEntry = { Tab = settingsTab, Button = settingsBtn }
+    table.insert(Library.Tabs, settingsEntry)
+
+    TrackConnection(settingsBtn.MouseButton1Click:Connect(newcclosure(function()
+        Library:SwitchTab(settingsTab)
+    end)))
+
+    -- Interface group (left column)
+    local ifaceGroup = settingsTab:AddGroupBox("Interface", "Left")
+
+    local masterKey = ifaceGroup:AddKeyPicker("_SlateToggleKey", {
+        Text    = "Toggle UI",
+        Default = "RightControl",
+        Mode    = "Always",
+        NoUI    = false,
+    })
+    masterKey.Clicked:Connect(newcclosure(function()
+        Library:ToggleVisibility()
+    end))
+
+    ifaceGroup:AddDivider()
+
+    local accentPicker = ifaceGroup:AddColorPicker("_SlateAccent", {
+        Title   = "Accent Color",
+        Default = Library.Theme.Status.Accent,
+    })
+    accentPicker.Changed:Connect(newcclosure(function(color)
+        Library.Theme.Status.Accent = color
+        for _, entry in ipairs(Library.Tabs) do
+            if entry.Tab == Library.ActiveTab then
+                entry.Button.BackgroundColor3 = color
+            end
+        end
+    end))
+
+    -- Config group (right column)
+    local configGroup = settingsTab:AddGroupBox("Config", "Right")
+
+    configGroup:AddInput("_SlateConfigName", {
+        Text        = "Config Name",
+        Placeholder = "default",
+        Default     = "default",
+        Finished    = true,
+    })
+
+    configGroup:AddButton({
+        Text       = "Save Config",
+        ButtonText = "Save",
+        Func = newcclosure(function()
+            local name = Library.Options._SlateConfigName.Value
+            Library:SaveConfig(name ~= "" and name or "default")
+        end),
+    })
+
+    configGroup:AddButton({
+        Text       = "Load Config",
+        ButtonText = "Load",
+        Func = newcclosure(function()
+            local name = Library.Options._SlateConfigName.Value
+            Library:LoadConfig(name ~= "" and name or "default")
+        end),
+    })
+
+    -- Start hidden (user tabs take precedence)
+    for groupBox, state in pairs(Renderer.GroupBoxes) do
+        if groupBox.Tab == settingsTab and state.Root then
+            state.Root.Visible = false
+        end
+    end
+
+    Library._settingsTab = settingsTab
+    Library._settingsTabButton = settingsBtn
 end
 
 if EXECUTION_STORE then
