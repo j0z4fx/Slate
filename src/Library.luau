@@ -1,104 +1,136 @@
 local Library = {}
 
-local ASPECT_RATIO = 16 / 9
-local MIN_WINDOW_SIZE = Vector2.new(480, 270)
-local WINDOW_CORNER_RADIUS = 16
-local SIDEBAR_CORNER_RADIUS = math.max(0, WINDOW_CORNER_RADIUS - 8)
-local WINDOW_BACKGROUND_IMAGE = "rbxassetid://80999662900595"
-local WINDOW_SLICE_CENTER = Rect.new(256, 256, 256, 256)
-local WINDOW_SLICE_SCALE = WINDOW_CORNER_RADIUS / 256
-local BOTTOM_DRAG_BAR_WIDTH = 160
-local BOTTOM_DRAG_BAR_HEIGHT = 4
-local BOTTOM_DRAG_BAR_OUTSET = 4
-local BOTTOM_DRAG_BAR_IDLE_TRANSPARENCY = 0.8
-local BOTTOM_DRAG_BAR_ACTIVE_TRANSPARENCY = 0.35
-local RESIZE_HANDLE_OUTSET = 8
-local RESIZE_HANDLE_HITBOX_SIZE = 48
-local RESIZE_HANDLE_VISUAL_SIZE = 96
-local RESIZE_HANDLE_VISUAL_SHIFT = -24
-local RESIZE_HANDLE_IDLE_TRANSPARENCY = 0.8
-local RESIZE_HANDLE_ACTIVE_TRANSPARENCY = 0.35
-local RESIZE_HANDLE_IMAGE = "rbxassetid://120997033468887"
-local GROUPBOX_CORNER_RADIUS = 8
-local GROUPBOX_TITLE_HEIGHT = 30
-local GROUPBOX_PADDING = 8
-local GROUPBOX_CHILD_PADDING = 8
-local GROUPBOX_COLLAPSE_ANIMATION_TIME = 0.18
-local DEFAULT_TAB_NAME = "Main"
-local GROUPBOX_DRAG_PLACEHOLDER_INSET = 7
-local TOGGLE_ROW_HEIGHT = 20
-local TOGGLE_TRACK_WIDTH = 32
-local TOGGLE_TRACK_HEIGHT = 16
-local TOGGLE_THUMB_SIZE = 12
-local TOGGLE_THUMB_PADDING = 2
-local TOGGLE_ANIMATION_TIME = 0.15
-local CHECKBOX_ROW_HEIGHT = 20
-local CHECKBOX_BOX_SIZE = 14
-local CHECKBOX_BOX_CORNER_RADIUS = 4
-local CHECKBOX_FILL_INSET = 3
-local CHECKBOX_ANIMATION_TIME = 0.15
-local CONTROL_ADDON_GAP = 6
-local DROPDOWN_ROW_HEIGHT = 22
-local DROPDOWN_LABEL_HEIGHT = 12
-local DROPDOWN_TRIGGER_HEIGHT = 22
-local DROPDOWN_CORNER_RADIUS = 6
-local DROPDOWN_MENU_PADDING = 6
-local DROPDOWN_MENU_GAP = 4
-local DROPDOWN_MENU_ITEM_HEIGHT = 20
-local DROPDOWN_MENU_ITEM_PADDING = 4
-local DROPDOWN_MENU_ITEM_INSET = 2
-local DROPDOWN_SEARCH_HEIGHT = 22
-local DROPDOWN_MIN_MENU_WIDTH = 140
-local DROPDOWN_ANIMATION_TIME = 0.195
-local DROPDOWN_CLOSED_HEIGHT = 4
-local DROPDOWN_MENU_INSET = 1
-local DROPDOWN_LABEL_WIDTH_SCALE = 0.42
-local DROPDOWN_LABEL_GAP = 8
-local DROPDOWN_INDICATOR_WIDTH = 18
-local BUTTON_ROW_HEIGHT = 22
-local BUTTON_CORNER_RADIUS = 6
-local BUTTON_ANIMATION_TIME = 0.12
-local BUTTON_DOUBLE_CLICK_WINDOW_DEFAULT = 0.35
-local SLIDER_ROW_HEIGHT = 30
-local SLIDER_COMPACT_ROW_HEIGHT = 20
-local SLIDER_LABEL_HEIGHT = 14
-local SLIDER_TRACK_HEIGHT = 4
-local SLIDER_THUMB_SIZE = 10
-local SLIDER_THUMB_HITBOX_SIZE = 20
-local SLIDER_VALUE_WIDTH = 55
-local SLIDER_LABEL_WIDTH_SCALE = 0.38
-local SLIDER_LABEL_GAP = 6
-local SLIDER_ANIMATION_TIME = 0.1
-local INPUT_ROW_HEIGHT = 22
-local INPUT_LABEL_WIDTH_SCALE = 0.42
-local INPUT_LABEL_GAP = 8
-local INPUT_CORNER_RADIUS = 6
-local INPUT_ANIMATION_TIME = 0.12
-local COLORPICKER_ROW_HEIGHT = 22
-local COLORPICKER_SWATCH_SIZE = 14
-local COLORPICKER_SV_SIZE = 150
-local COLORPICKER_HUE_WIDTH = 14
-local COLORPICKER_HUE_GAP = 6
-local COLORPICKER_DISPLAY_WIDTH_SCALE = 0.2
-local COLORPICKER_POPUP_PADDING = 8
-local COLORPICKER_POPUP_GAP = 8
-local COLORPICKER_POPUP_EDGE_PADDING = 8
-local COLORPICKER_CURSOR_SIZE = 8
-local COLORPICKER_HEX_HEIGHT = 22
-local COLORPICKER_ANIMATION_TIME = 0.12
-local COLORPICKER_ATTACHED_WIDTH = 22
-local COLORPICKER_ATTACHED_HEIGHT = 18
-local KEYPICKER_ROW_HEIGHT = 22
-local KEYPICKER_BUTTON_HEIGHT = 20
-local KEYPICKER_BUTTON_MIN_WIDTH = 34
-local KEYPICKER_MODE_WIDTH = 52
-local KEYPICKER_ATTACHED_HEIGHT = 18
-local KEYPICKER_CORNER_RADIUS = 6
-local KEYPICKER_ANIMATION_TIME = 0.12
-local COLUMN_FADE_HEIGHT = 52
-local EXECUTION_REGISTRY_KEY = "__SlateActiveExecution_Library"
-local EXECUTION_GUI_PREFIX = "SlateUI_"
-local EXECUTION_GUI_ATTRIBUTE = "SlateManagedExecution"
+local Const = {
+    Window = {
+        AspectRatio     = 16 / 9,
+        MinSize         = Vector2.new(480, 270),
+        CornerRadius    = 16,
+        SidebarRadius   = math.max(0, 16 - 8),
+        BackgroundImage = "rbxassetid://80999662900595",
+        SliceCenter     = Rect.new(256, 256, 256, 256),
+        SliceScale      = 16 / 256,
+    },
+    DragBar = {
+        Width              = 160,
+        Height             = 4,
+        Outset             = 4,
+        IdleTransparency   = 0.8,
+        ActiveTransparency = 0.35,
+    },
+    ResizeHandle = {
+        Outset             = 8,
+        HitboxSize         = 48,
+        VisualSize         = 96,
+        VisualShift        = -24,
+        IdleTransparency   = 0.8,
+        ActiveTransparency = 0.35,
+        Image              = "rbxassetid://120997033468887",
+    },
+    GroupBox = {
+        CornerRadius         = 8,
+        TitleHeight          = 30,
+        Padding              = 8,
+        ChildPadding         = 8,
+        CollapseAnimTime     = 0.18,
+        DragPlaceholderInset = 7,
+        DefaultTabName       = "Main",
+    },
+    Toggle = {
+        RowHeight    = 20,
+        TrackWidth   = 32,
+        TrackHeight  = 16,
+        ThumbSize    = 12,
+        ThumbPadding = 2,
+        AnimTime     = 0.15,
+    },
+    Checkbox = {
+        RowHeight       = 20,
+        BoxSize         = 14,
+        BoxCornerRadius = 4,
+        FillInset       = 3,
+        AnimTime        = 0.15,
+    },
+    Control = {
+        AddonGap = 6,
+    },
+    Dropdown = {
+        RowHeight       = 22,
+        LabelHeight     = 12,
+        TriggerHeight   = 22,
+        CornerRadius    = 6,
+        MenuPadding     = 6,
+        MenuGap         = 4,
+        MenuItemHeight  = 20,
+        MenuItemPadding = 4,
+        MenuItemInset   = 2,
+        SearchHeight    = 22,
+        MinMenuWidth    = 140,
+        AnimTime        = 0.195,
+        ClosedHeight    = 4,
+        MenuInset       = 1,
+        LabelWidthScale = 0.42,
+        LabelGap        = 8,
+        IndicatorWidth  = 18,
+    },
+    Button = {
+        RowHeight         = 22,
+        CornerRadius      = 6,
+        AnimTime          = 0.12,
+        DoubleClickWindow = 0.35,
+    },
+    Slider = {
+        RowHeight        = 30,
+        CompactRowHeight = 20,
+        LabelHeight      = 14,
+        TrackHeight      = 4,
+        ThumbSize        = 10,
+        ThumbHitboxSize  = 20,
+        ValueWidth       = 55,
+        LabelWidthScale  = 0.38,
+        LabelGap         = 6,
+        AnimTime         = 0.1,
+    },
+    Input = {
+        RowHeight       = 22,
+        LabelWidthScale = 0.42,
+        LabelGap        = 8,
+        CornerRadius    = 6,
+        AnimTime        = 0.12,
+    },
+    ColorPicker = {
+        RowHeight         = 22,
+        SwatchSize        = 14,
+        SvSize            = 150,
+        HueWidth          = 14,
+        HueGap            = 6,
+        DisplayWidthScale = 0.2,
+        PopupPadding      = 8,
+        PopupGap          = 8,
+        PopupEdgePadding  = 8,
+        CursorSize        = 8,
+        HexHeight         = 22,
+        AnimTime          = 0.12,
+        AttachedWidth     = 22,
+        AttachedHeight    = 18,
+    },
+    KeyPicker = {
+        RowHeight      = 22,
+        ButtonHeight   = 20,
+        ButtonMinWidth = 34,
+        ModeWidth      = 52,
+        AttachedHeight = 18,
+        CornerRadius   = 6,
+        AnimTime       = 0.12,
+    },
+    Column = {
+        FadeHeight = 52,
+    },
+    Execution = {
+        RegistryKey  = "__SlateActiveExecution_Library",
+        GuiPrefix    = "SlateUI_",
+        GuiAttribute = "SlateManagedExecution",
+    },
+}
 
 Library.Theme = {
     Surface = {
@@ -189,17 +221,17 @@ local function IsManagedSlateGui(gui)
         return false
     end
 
-    if gui:GetAttribute(EXECUTION_GUI_ATTRIBUTE) == true then
+    if gui:GetAttribute(Const.Execution.GuiAttribute) == true then
         return true
     end
 
-    return string.sub(gui.Name, 1, #EXECUTION_GUI_PREFIX) == EXECUTION_GUI_PREFIX
+    return string.sub(gui.Name, 1, #Const.Execution.GuiPrefix) == Const.Execution.GuiPrefix
 end
 
 local function DestroyPreviousExecution(guiParent)
     if EXECUTION_STORE then
-        local previousExecution = EXECUTION_STORE[EXECUTION_REGISTRY_KEY]
-        EXECUTION_STORE[EXECUTION_REGISTRY_KEY] = nil
+        local previousExecution = EXECUTION_STORE[Const.Execution.RegistryKey]
+        EXECUTION_STORE[Const.Execution.RegistryKey] = nil
 
         if type(previousExecution) == "table" and type(previousExecution.Destroy) == "function" then
             local ok, err = pcall(previousExecution.Destroy)
@@ -1194,7 +1226,7 @@ function Button.new(props)
     self.Risky = not not props.Risky
     self.Func = type(props.Func) == "function" and props.Func or nil
     self.DoubleClick = not not props.DoubleClick
-    self.DoubleClickWindow = tonumber(props.DoubleClickWindow) or BUTTON_DOUBLE_CLICK_WINDOW_DEFAULT
+    self.DoubleClickWindow = tonumber(props.DoubleClickWindow) or Const.Button.DoubleClickWindow
     self.OnInvoke = FastSignal.new()
     self._doubleClickPending = false
     self._doubleClickGen = 0
@@ -2218,7 +2250,7 @@ setmetatable(Tab, Component)
 function Tab.new(library, name)
     local self = setmetatable(Component.new("Tab"), Tab)
     self.Library = library
-    self.Name = tostring(name or DEFAULT_TAB_NAME)
+    self.Name = tostring(name or Const.GroupBox.DefaultTabName)
     self.GroupBoxes = {}
     self._nextGroupBoxLayoutOrder = 1
     return self
@@ -2259,7 +2291,7 @@ local function GetScreenSize(gui)
         return currentCamera.ViewportSize
     end
 
-    return MIN_WINDOW_SIZE
+    return Const.Window.MinSize
 end
 
 local ScreenGui
@@ -2270,9 +2302,9 @@ local function UnregisterCurrentExecution()
         return
     end
 
-    local currentExecution = EXECUTION_STORE[EXECUTION_REGISTRY_KEY]
+    local currentExecution = EXECUTION_STORE[Const.Execution.RegistryKey]
     if type(currentExecution) == "table" and currentExecution.ScreenGui == ScreenGui then
-        EXECUTION_STORE[EXECUTION_REGISTRY_KEY] = nil
+        EXECUTION_STORE[Const.Execution.RegistryKey] = nil
     end
 end
 
@@ -2300,7 +2332,7 @@ local function GetWindowTopLeft()
 end
 
 local function ApplyWindowSize(topLeft, width)
-    local height = width / ASPECT_RATIO
+    local height = width / Const.Window.AspectRatio
     local anchorPoint = WindowFrame.AnchorPoint
 
     WindowFrame.Size = UDim2.fromOffset(width, height)
@@ -2312,7 +2344,7 @@ end
 
 local function ClampWindowTopLeft(topLeft, width, bottomMargin)
     local screenSize = GetScreenSize(ScreenGui)
-    local height = width / ASPECT_RATIO
+    local height = width / Const.Window.AspectRatio
     local maxX = math.max(0, screenSize.X - width)
     local maxY = math.max(0, screenSize.Y - height - (bottomMargin or 0))
 
@@ -2326,13 +2358,13 @@ local function BuildResizeHandleIcon(parent)
     local icon = Instance.new("ImageLabel")
     icon.Name = "Icon"
     icon.AnchorPoint = Vector2.new(0.5, 0.5)
-    icon.Position = UDim2.new(0.5, RESIZE_HANDLE_VISUAL_SHIFT, 0.5, RESIZE_HANDLE_VISUAL_SHIFT)
-    icon.Size = UDim2.fromOffset(RESIZE_HANDLE_VISUAL_SIZE, RESIZE_HANDLE_VISUAL_SIZE)
+    icon.Position = UDim2.new(0.5, Const.ResizeHandle.VisualShift, 0.5, Const.ResizeHandle.VisualShift)
+    icon.Size = UDim2.fromOffset(Const.ResizeHandle.VisualSize, Const.ResizeHandle.VisualSize)
     icon.BackgroundTransparency = 1
     icon.BorderSizePixel = 0
-    icon.Image = RESIZE_HANDLE_IMAGE
+    icon.Image = Const.ResizeHandle.Image
     icon.ImageColor3 = Library.Theme.Text.Primary
-    icon.ImageTransparency = RESIZE_HANDLE_IDLE_TRANSPARENCY
+    icon.ImageTransparency = Const.ResizeHandle.IdleTransparency
     icon.Parent = parent
 
     return icon
@@ -2353,7 +2385,7 @@ end
 local function BuildTopRoundedBar(name, color)
     local frame = Instance.new("Frame")
     frame.Name = name
-    frame.Size = UDim2.new(1, 0, 0, GROUPBOX_TITLE_HEIGHT)
+    frame.Size = UDim2.new(1, 0, 0, Const.GroupBox.TitleHeight)
     frame.BackgroundTransparency = 1
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = false
@@ -2367,13 +2399,13 @@ local function BuildTopRoundedBar(name, color)
     roundedSurface.Parent = frame
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, GROUPBOX_CORNER_RADIUS)
+    corner.CornerRadius = UDim.new(0, Const.GroupBox.CornerRadius)
     corner.Parent = roundedSurface
 
     local bottomMask = Instance.new("Frame")
     bottomMask.Name = "BottomMask"
-    bottomMask.Position = UDim2.new(0, 0, 1, -GROUPBOX_CORNER_RADIUS)
-    bottomMask.Size = UDim2.new(1, 0, 0, GROUPBOX_CORNER_RADIUS)
+    bottomMask.Position = UDim2.new(0, 0, 1, -Const.GroupBox.CornerRadius)
+    bottomMask.Size = UDim2.new(1, 0, 0, Const.GroupBox.CornerRadius)
     bottomMask.BackgroundColor3 = color
     bottomMask.BorderSizePixel = 0
     bottomMask.ZIndex = 2
@@ -2391,7 +2423,7 @@ local function BuildBottomRoundedBody(name, color)
     frame.BorderSizePixel = 0
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, GROUPBOX_CORNER_RADIUS)
+    corner.CornerRadius = UDim.new(0, Const.GroupBox.CornerRadius)
     corner.Parent = frame
 
     CreateGroupBoxSectionFill(
@@ -2399,7 +2431,7 @@ local function BuildBottomRoundedBody(name, color)
         "TopFill",
         color,
         UDim2.new(0, 0, 0, 0),
-        UDim2.new(1, 0, 0, GROUPBOX_CORNER_RADIUS)
+        UDim2.new(1, 0, 0, Const.GroupBox.CornerRadius)
     )
 
     return frame
@@ -2411,7 +2443,7 @@ ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "SlateUI_" .. tostring(math.random(1e5, 9e5))
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
-ScreenGui:SetAttribute(EXECUTION_GUI_ATTRIBUTE, true)
+ScreenGui:SetAttribute(Const.Execution.GuiAttribute, true)
 
 if syn and syn.protect_gui then
     syn.protect_gui(ScreenGui)
@@ -2439,9 +2471,9 @@ BackgroundFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 BackgroundFrame.BackgroundTransparency = 1
 BackgroundFrame.BorderSizePixel = 0
 BackgroundFrame.ScaleType = Enum.ScaleType.Slice
-BackgroundFrame.SliceCenter = WINDOW_SLICE_CENTER
-BackgroundFrame.SliceScale = WINDOW_SLICE_SCALE
-BackgroundFrame.Image = WINDOW_BACKGROUND_IMAGE
+BackgroundFrame.SliceCenter = Const.Window.SliceCenter
+BackgroundFrame.SliceScale = Const.Window.SliceScale
+BackgroundFrame.Image = Const.Window.BackgroundImage
 BackgroundFrame.ImageColor3 = Library.Theme.Surface.Background
 BackgroundFrame.Parent = WindowFrame
 Library.BackgroundFrame = BackgroundFrame
@@ -2455,7 +2487,7 @@ SidebarFrame.BorderSizePixel = 0
 SidebarFrame.Parent = WindowFrame
 
 local SidebarCorner = Instance.new("UICorner")
-SidebarCorner.CornerRadius = UDim.new(0, SIDEBAR_CORNER_RADIUS)
+SidebarCorner.CornerRadius = UDim.new(0, Const.Window.SidebarRadius)
 SidebarCorner.Parent = SidebarFrame
 
 local columnSize = UDim2.new(1 / 3, -(100 / 3), 1, -16)
@@ -2510,7 +2542,7 @@ Library.Columns = ColumnFrames
 do
     local function ConfigureColumn(frame)
         local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, GROUPBOX_CHILD_PADDING)
+        layout.Padding = UDim.new(0, Const.GroupBox.ChildPadding)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         layout.Parent = frame
@@ -2534,7 +2566,7 @@ do
         fade.Size = UDim2.new(
             column.Size.X.Scale,
             column.Size.X.Offset,
-            0, COLUMN_FADE_HEIGHT
+            0, Const.Column.FadeHeight
         )
         fade.BackgroundColor3 = Library.Theme.Surface.Background
         fade.BackgroundTransparency = 0
@@ -2561,16 +2593,16 @@ end
 local BottomDragBar = Instance.new("ImageLabel")
 BottomDragBar.Name = "BottomDragBar"
 BottomDragBar.AnchorPoint = Vector2.new(0.5, 0)
-BottomDragBar.Position = UDim2.new(0.5, 0, 1, BOTTOM_DRAG_BAR_OUTSET)
-BottomDragBar.Size = UDim2.fromOffset(BOTTOM_DRAG_BAR_WIDTH, BOTTOM_DRAG_BAR_HEIGHT)
+BottomDragBar.Position = UDim2.new(0.5, 0, 1, Const.DragBar.Outset)
+BottomDragBar.Size = UDim2.fromOffset(Const.DragBar.Width, Const.DragBar.Height)
 BottomDragBar.BackgroundTransparency = 1
 BottomDragBar.BorderSizePixel = 0
 BottomDragBar.ScaleType = Enum.ScaleType.Slice
-BottomDragBar.SliceCenter = WINDOW_SLICE_CENTER
+BottomDragBar.SliceCenter = Const.Window.SliceCenter
 BottomDragBar.SliceScale = 99 / 256
-BottomDragBar.Image = WINDOW_BACKGROUND_IMAGE
+BottomDragBar.Image = Const.Window.BackgroundImage
 BottomDragBar.ImageColor3 = Library.Theme.Text.Primary
-BottomDragBar.ImageTransparency = BOTTOM_DRAG_BAR_IDLE_TRANSPARENCY
+BottomDragBar.ImageTransparency = Const.DragBar.IdleTransparency
 BottomDragBar.Parent = WindowFrame
 Library.BottomDragBar = BottomDragBar
 
@@ -2588,8 +2620,8 @@ BottomDragBarInteract.Parent = BottomDragBar
 
 local ResizeHandle = Instance.new("Frame")
 ResizeHandle.Name = "ResizeHandle"
-ResizeHandle.Size = UDim2.fromOffset(RESIZE_HANDLE_HITBOX_SIZE, RESIZE_HANDLE_HITBOX_SIZE)
-ResizeHandle.Position = UDim2.new(1, RESIZE_HANDLE_OUTSET, 1, RESIZE_HANDLE_OUTSET)
+ResizeHandle.Size = UDim2.fromOffset(Const.ResizeHandle.HitboxSize, Const.ResizeHandle.HitboxSize)
+ResizeHandle.Position = UDim2.new(1, Const.ResizeHandle.Outset, 1, Const.ResizeHandle.Outset)
 ResizeHandle.AnchorPoint = Vector2.new(0.5, 0.5)
 ResizeHandle.BackgroundTransparency = 1
 ResizeHandle.BorderSizePixel = 0
@@ -2701,7 +2733,7 @@ end
 function RendererHelpers.TweenGroupBoxTitleBarCollapsedVisual(state, collapsed)
     state.TitleMaskTween = TweenService:Create(
         state.TitleBottomMask,
-        TweenInfo.new(GROUPBOX_COLLAPSE_ANIMATION_TIME, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        TweenInfo.new(Const.GroupBox.CollapseAnimTime, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
         { BackgroundTransparency = RendererHelpers.GetGroupBoxTitleBottomMaskTransparency(collapsed) }
     )
     state.TitleMaskTween:Play()
@@ -2768,11 +2800,11 @@ function RendererHelpers.ApplyGroupBoxCollapsedState(groupBox, animate)
         RendererHelpers.TweenGroupBoxTitleBarCollapsedVisual(state, true)
         state.CollapseTween = TweenService:Create(
             state.BodyContainer,
-            TweenInfo.new(GROUPBOX_COLLAPSE_ANIMATION_TIME, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            TweenInfo.new(Const.GroupBox.CollapseAnimTime, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
             { Size = UDim2.new(1, 0, 0, 0) }
         )
         state.CollapseTween:Play()
-        task.delay(GROUPBOX_COLLAPSE_ANIMATION_TIME, finishCollapseVisual)
+        task.delay(Const.GroupBox.CollapseAnimTime, finishCollapseVisual)
         return
     end
 
@@ -2792,11 +2824,11 @@ function RendererHelpers.ApplyGroupBoxCollapsedState(groupBox, animate)
         local targetHeight = state.ControlArea.AbsoluteSize.Y
         state.CollapseTween = TweenService:Create(
             state.BodyContainer,
-            TweenInfo.new(GROUPBOX_COLLAPSE_ANIMATION_TIME, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            TweenInfo.new(Const.GroupBox.CollapseAnimTime, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
             { Size = UDim2.new(1, 0, 0, targetHeight) }
         )
         state.CollapseTween:Play()
-        task.delay(GROUPBOX_COLLAPSE_ANIMATION_TIME, finishCollapseVisual)
+        task.delay(Const.GroupBox.CollapseAnimTime, finishCollapseVisual)
     end)
 end
 
@@ -2895,7 +2927,7 @@ function Renderer:MountGroupBox(groupBox)
     local collapseButton = Instance.new("TextButton")
     collapseButton.Name = "CollapseButton"
     collapseButton.AnchorPoint = Vector2.new(1, 0.5)
-    collapseButton.Position = UDim2.new(1, -GROUPBOX_PADDING, 0.5, 0)
+    collapseButton.Position = UDim2.new(1, -Const.GroupBox.Padding, 0.5, 0)
     collapseButton.Size = UDim2.fromOffset(18, 18)
     collapseButton.BackgroundTransparency = 1
     collapseButton.BorderSizePixel = 0
@@ -2933,21 +2965,21 @@ function Renderer:MountGroupBox(groupBox)
 
     local controlArea = Instance.new("Frame")
     controlArea.Name = "gbControlArea"
-    controlArea.Size = UDim2.new(1, 0, 0, GROUPBOX_PADDING * 2)
+    controlArea.Size = UDim2.new(1, 0, 0, Const.GroupBox.Padding * 2)
     controlArea.AutomaticSize = Enum.AutomaticSize.Y
     controlArea.BackgroundTransparency = 1
     controlArea.BorderSizePixel = 0
     controlArea.Parent = bodyContainer
 
     local controlPadding = Instance.new("UIPadding")
-    controlPadding.PaddingLeft = UDim.new(0, GROUPBOX_PADDING)
-    controlPadding.PaddingRight = UDim.new(0, GROUPBOX_PADDING)
-    controlPadding.PaddingTop = UDim.new(0, GROUPBOX_PADDING)
-    controlPadding.PaddingBottom = UDim.new(0, GROUPBOX_PADDING)
+    controlPadding.PaddingLeft = UDim.new(0, Const.GroupBox.Padding)
+    controlPadding.PaddingRight = UDim.new(0, Const.GroupBox.Padding)
+    controlPadding.PaddingTop = UDim.new(0, Const.GroupBox.Padding)
+    controlPadding.PaddingBottom = UDim.new(0, Const.GroupBox.Padding)
     controlPadding.Parent = controlArea
 
     local controlLayout = Instance.new("UIListLayout")
-    controlLayout.Padding = UDim.new(0, GROUPBOX_CHILD_PADDING)
+    controlLayout.Padding = UDim.new(0, Const.GroupBox.ChildPadding)
     controlLayout.SortOrder = Enum.SortOrder.LayoutOrder
     controlLayout.Parent = controlArea
 
@@ -3046,14 +3078,14 @@ Library:RegisterControlRenderer("Label", function(control)
     addonLayout.FillDirection = Enum.FillDirection.Horizontal
     addonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     addonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    addonLayout.Padding = UDim.new(0, CONTROL_ADDON_GAP)
+    addonLayout.Padding = UDim.new(0, Const.Control.AddonGap)
     addonLayout.Parent = addonContainer
 
     local localConnections = {}
 
     local function updateLayout()
         local addonWidth = addonContainer.AbsoluteSize.X
-        local addonGap = addonWidth > 0 and CONTROL_ADDON_GAP or 0
+        local addonGap = addonWidth > 0 and Const.Control.AddonGap or 0
 
         if control.Wrap then
             root.Size = UDim2.new(1, 0, 0, 0)
@@ -3129,7 +3161,7 @@ end)
 Library:RegisterControlRenderer("Toggle", function(control)
     local root = Instance.new("TextButton")
     root.Name = "Toggle"
-    root.Size = UDim2.new(1, 0, 0, TOGGLE_ROW_HEIGHT)
+    root.Size = UDim2.new(1, 0, 0, Const.Toggle.RowHeight)
     root.BackgroundTransparency = 1
     root.BorderSizePixel = 0
     root.AutoButtonColor = false
@@ -3162,7 +3194,7 @@ Library:RegisterControlRenderer("Toggle", function(control)
     rightRail.AnchorPoint = Vector2.new(1, 0.5)
     rightRail.Position = UDim2.new(1, 0, 0.5, 0)
     rightRail.AutomaticSize = Enum.AutomaticSize.X
-    rightRail.Size = UDim2.new(0, 0, 0, TOGGLE_ROW_HEIGHT)
+    rightRail.Size = UDim2.new(0, 0, 0, Const.Toggle.RowHeight)
     rightRail.BackgroundTransparency = 1
     rightRail.BorderSizePixel = 0
     rightRail.Parent = root
@@ -3172,13 +3204,13 @@ Library:RegisterControlRenderer("Toggle", function(control)
     rightRailLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     rightRailLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     rightRailLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    rightRailLayout.Padding = UDim.new(0, CONTROL_ADDON_GAP)
+    rightRailLayout.Padding = UDim.new(0, Const.Control.AddonGap)
     rightRailLayout.Parent = rightRail
 
     local addonContainer = Instance.new("Frame")
     addonContainer.Name = "AddonContainer"
     addonContainer.AutomaticSize = Enum.AutomaticSize.X
-    addonContainer.Size = UDim2.new(0, 0, 0, TOGGLE_ROW_HEIGHT)
+    addonContainer.Size = UDim2.new(0, 0, 0, Const.Toggle.RowHeight)
     addonContainer.BackgroundTransparency = 1
     addonContainer.BorderSizePixel = 0
     addonContainer.LayoutOrder = 1
@@ -3189,18 +3221,18 @@ Library:RegisterControlRenderer("Toggle", function(control)
     addonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     addonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     addonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    addonLayout.Padding = UDim.new(0, CONTROL_ADDON_GAP)
+    addonLayout.Padding = UDim.new(0, Const.Control.AddonGap)
     addonLayout.Parent = addonContainer
 
     local track = Instance.new("Frame")
     track.Name = "Track"
-    track.Size = UDim2.fromOffset(TOGGLE_TRACK_WIDTH, TOGGLE_TRACK_HEIGHT)
+    track.Size = UDim2.fromOffset(Const.Toggle.TrackWidth, Const.Toggle.TrackHeight)
     track.BorderSizePixel = 0
     track.LayoutOrder = 2
     track.Parent = rightRail
 
     local trackCorner = Instance.new("UICorner")
-    trackCorner.CornerRadius = UDim.new(0, TOGGLE_TRACK_HEIGHT / 2)
+    trackCorner.CornerRadius = UDim.new(0, Const.Toggle.TrackHeight / 2)
     trackCorner.Parent = track
 
     local trackStroke = Instance.new("UIStroke")
@@ -3211,13 +3243,13 @@ Library:RegisterControlRenderer("Toggle", function(control)
     local thumb = Instance.new("Frame")
     thumb.Name = "Thumb"
     thumb.AnchorPoint = Vector2.new(0, 0.5)
-    thumb.Position = UDim2.fromOffset(TOGGLE_THUMB_PADDING, TOGGLE_TRACK_HEIGHT / 2)
-    thumb.Size = UDim2.fromOffset(TOGGLE_THUMB_SIZE, TOGGLE_THUMB_SIZE)
+    thumb.Position = UDim2.fromOffset(Const.Toggle.ThumbPadding, Const.Toggle.TrackHeight / 2)
+    thumb.Size = UDim2.fromOffset(Const.Toggle.ThumbSize, Const.Toggle.ThumbSize)
     thumb.BorderSizePixel = 0
     thumb.Parent = track
 
     local thumbCorner = Instance.new("UICorner")
-    thumbCorner.CornerRadius = UDim.new(0, TOGGLE_THUMB_SIZE / 2)
+    thumbCorner.CornerRadius = UDim.new(0, Const.Toggle.ThumbSize / 2)
     thumbCorner.Parent = thumb
 
     local activeTweens = {}
@@ -3259,8 +3291,8 @@ Library:RegisterControlRenderer("Toggle", function(control)
         local isDisabled = control.Disabled
         local baseTextColor = control.Risky and Library.Theme.Status.Error or Library.Theme.Text.Primary
         local hoverTransparency = hovered and 0.82 or 1
-        local duration = instant and 0 or TOGGLE_ANIMATION_TIME
-        local thumbX = isOn and (TOGGLE_TRACK_WIDTH - TOGGLE_THUMB_SIZE - TOGGLE_THUMB_PADDING) or TOGGLE_THUMB_PADDING
+        local duration = instant and 0 or Const.Toggle.AnimTime
+        local thumbX = isOn and (Const.Toggle.TrackWidth - Const.Toggle.ThumbSize - Const.Toggle.ThumbPadding) or Const.Toggle.ThumbPadding
 
         root.Visible = control.Visible
         label.Text = control.Text
@@ -3283,7 +3315,7 @@ Library:RegisterControlRenderer("Toggle", function(control)
         tweenProperty(thumb, duration, {
             BackgroundColor3 = isDisabled and Library.Theme.Text.Tertiary or Library.Theme.Text.Primary,
             BackgroundTransparency = isDisabled and 0.2 or 0,
-            Position = UDim2.fromOffset(thumbX, TOGGLE_TRACK_HEIGHT / 2),
+            Position = UDim2.fromOffset(thumbX, Const.Toggle.TrackHeight / 2),
         })
     end
 
@@ -3332,7 +3364,7 @@ end)
 Library:RegisterControlRenderer("Checkbox", function(control)
     local root = Instance.new("TextButton")
     root.Name = "Checkbox"
-    root.Size = UDim2.new(1, 0, 0, CHECKBOX_ROW_HEIGHT)
+    root.Size = UDim2.new(1, 0, 0, Const.Checkbox.RowHeight)
     root.BackgroundTransparency = 1
     root.BorderSizePixel = 0
     root.AutoButtonColor = false
@@ -3365,7 +3397,7 @@ Library:RegisterControlRenderer("Checkbox", function(control)
     rightRail.AnchorPoint = Vector2.new(1, 0.5)
     rightRail.Position = UDim2.new(1, 0, 0.5, 0)
     rightRail.AutomaticSize = Enum.AutomaticSize.X
-    rightRail.Size = UDim2.new(0, 0, 0, CHECKBOX_ROW_HEIGHT)
+    rightRail.Size = UDim2.new(0, 0, 0, Const.Checkbox.RowHeight)
     rightRail.BackgroundTransparency = 1
     rightRail.BorderSizePixel = 0
     rightRail.Parent = root
@@ -3375,13 +3407,13 @@ Library:RegisterControlRenderer("Checkbox", function(control)
     rightRailLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     rightRailLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     rightRailLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    rightRailLayout.Padding = UDim.new(0, CONTROL_ADDON_GAP)
+    rightRailLayout.Padding = UDim.new(0, Const.Control.AddonGap)
     rightRailLayout.Parent = rightRail
 
     local addonContainer = Instance.new("Frame")
     addonContainer.Name = "AddonContainer"
     addonContainer.AutomaticSize = Enum.AutomaticSize.X
-    addonContainer.Size = UDim2.new(0, 0, 0, CHECKBOX_ROW_HEIGHT)
+    addonContainer.Size = UDim2.new(0, 0, 0, Const.Checkbox.RowHeight)
     addonContainer.BackgroundTransparency = 1
     addonContainer.BorderSizePixel = 0
     addonContainer.LayoutOrder = 1
@@ -3392,19 +3424,19 @@ Library:RegisterControlRenderer("Checkbox", function(control)
     addonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     addonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     addonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    addonLayout.Padding = UDim.new(0, CONTROL_ADDON_GAP)
+    addonLayout.Padding = UDim.new(0, Const.Control.AddonGap)
     addonLayout.Parent = addonContainer
 
     local box = Instance.new("Frame")
     box.Name = "Box"
-    box.Size = UDim2.fromOffset(CHECKBOX_BOX_SIZE, CHECKBOX_BOX_SIZE)
+    box.Size = UDim2.fromOffset(Const.Checkbox.BoxSize, Const.Checkbox.BoxSize)
     box.BackgroundTransparency = 1
     box.BorderSizePixel = 0
     box.LayoutOrder = 2
     box.Parent = rightRail
 
     local boxCorner = Instance.new("UICorner")
-    boxCorner.CornerRadius = UDim.new(0, CHECKBOX_BOX_CORNER_RADIUS)
+    boxCorner.CornerRadius = UDim.new(0, Const.Checkbox.BoxCornerRadius)
     boxCorner.Parent = box
 
     local boxStroke = Instance.new("UIStroke")
@@ -3416,12 +3448,12 @@ Library:RegisterControlRenderer("Checkbox", function(control)
     fill.Name = "Fill"
     fill.AnchorPoint = Vector2.new(0.5, 0.5)
     fill.Position = UDim2.fromScale(0.5, 0.5)
-    fill.Size = UDim2.new(1, -(CHECKBOX_FILL_INSET * 2), 1, -(CHECKBOX_FILL_INSET * 2))
+    fill.Size = UDim2.new(1, -(Const.Checkbox.FillInset * 2), 1, -(Const.Checkbox.FillInset * 2))
     fill.BorderSizePixel = 0
     fill.Parent = box
 
     local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, math.max(0, CHECKBOX_BOX_CORNER_RADIUS - CHECKBOX_FILL_INSET + 1))
+    fillCorner.CornerRadius = UDim.new(0, math.max(0, Const.Checkbox.BoxCornerRadius - Const.Checkbox.FillInset + 1))
     fillCorner.Parent = fill
 
     local activeTweens = {}
@@ -3464,7 +3496,7 @@ Library:RegisterControlRenderer("Checkbox", function(control)
         local activeColor = Library.Theme.Status.Accent
         local baseTextColor = control.Risky and Library.Theme.Status.Error or Library.Theme.Text.Primary
         local hoverTransparency = hovered and 0.82 or 1
-        local duration = instant and 0 or CHECKBOX_ANIMATION_TIME
+        local duration = instant and 0 or Const.Checkbox.AnimTime
 
         root.Visible = control.Visible
         label.Text = control.Text
@@ -3531,13 +3563,13 @@ end)
 Library:RegisterControlRenderer("Button", function(control)
     local root = Instance.new("Frame")
     root.Name = "Button"
-    root.Size = UDim2.new(1, 0, 0, BUTTON_ROW_HEIGHT)
+    root.Size = UDim2.new(1, 0, 0, Const.Button.RowHeight)
     root.BackgroundTransparency = 1
     root.BorderSizePixel = 0
 
     local label = Instance.new("TextLabel")
     label.Name = "Text"
-    label.Size = UDim2.new(DROPDOWN_LABEL_WIDTH_SCALE, -DROPDOWN_LABEL_GAP, 1, 0)
+    label.Size = UDim2.new(Const.Dropdown.LabelWidthScale, -Const.Dropdown.LabelGap, 1, 0)
     label.BackgroundTransparency = 1
     label.BorderSizePixel = 0
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -3551,7 +3583,7 @@ Library:RegisterControlRenderer("Button", function(control)
     pill.Name = "Pill"
     pill.AnchorPoint = Vector2.new(1, 0.5)
     pill.Position = UDim2.new(1, 0, 0.5, 0)
-    pill.Size = UDim2.new(1 - DROPDOWN_LABEL_WIDTH_SCALE, -DROPDOWN_LABEL_GAP, 1, -2)
+    pill.Size = UDim2.new(1 - Const.Dropdown.LabelWidthScale, -Const.Dropdown.LabelGap, 1, -2)
     pill.BackgroundColor3 = Library.Theme.Surface.S2
     pill.BorderSizePixel = 0
     pill.AutoButtonColor = false
@@ -3565,7 +3597,7 @@ Library:RegisterControlRenderer("Button", function(control)
     pill.Parent = root
 
     local pillCorner = Instance.new("UICorner")
-    pillCorner.CornerRadius = UDim.new(0, BUTTON_CORNER_RADIUS)
+    pillCorner.CornerRadius = UDim.new(0, Const.Button.CornerRadius)
     pillCorner.Parent = pill
 
     local pillStroke = Instance.new("UIStroke")
@@ -3609,7 +3641,7 @@ Library:RegisterControlRenderer("Button", function(control)
         local isDisabled = control.Disabled
         local isPending = control._doubleClickPending
         local isRisky = control.Risky
-        local duration = instant and 0 or BUTTON_ANIMATION_TIME
+        local duration = instant and 0 or Const.Button.AnimTime
 
         root.Visible = control.Visible
         label.Text = control.Text
@@ -3678,7 +3710,7 @@ Library:RegisterControlRenderer("Button", function(control)
                 cancelTweens()
                 pill.BackgroundColor3 = Library.Theme.Surface.S4
                 pill.BackgroundTransparency = 0
-                tweenProperty(pill, BUTTON_ANIMATION_TIME * 2.5, {
+                tweenProperty(pill, Const.Button.AnimTime * 2.5, {
                     BackgroundColor3 = hovered and Library.Theme.Surface.S3 or Library.Theme.Surface.S2,
                     BackgroundTransparency = 0,
                 })
@@ -3697,7 +3729,7 @@ end)
 
 Library:RegisterControlRenderer("Slider", function(control)
     local isCompact = control.Compact
-    local rowHeight = isCompact and SLIDER_COMPACT_ROW_HEIGHT or SLIDER_ROW_HEIGHT
+    local rowHeight = isCompact and Const.Slider.CompactRowHeight or Const.Slider.RowHeight
 
     local root = Instance.new("TextButton")
     root.Name = "Slider"
@@ -3741,14 +3773,14 @@ Library:RegisterControlRenderer("Slider", function(control)
     valueLabel.Parent = root
 
     if isCompact then
-        textLabel.Size = UDim2.new(SLIDER_LABEL_WIDTH_SCALE, 0, 1, 0)
+        textLabel.Size = UDim2.new(Const.Slider.LabelWidthScale, 0, 1, 0)
         textLabel.Position = UDim2.new(0, 0, 0, 0)
-        valueLabel.Size = UDim2.fromOffset(SLIDER_VALUE_WIDTH, rowHeight)
+        valueLabel.Size = UDim2.fromOffset(Const.Slider.ValueWidth, rowHeight)
         valueLabel.Position = UDim2.new(1, 0, 0, 0)
     else
-        textLabel.Size = UDim2.new(1, -SLIDER_VALUE_WIDTH, 0, SLIDER_LABEL_HEIGHT)
+        textLabel.Size = UDim2.new(1, -Const.Slider.ValueWidth, 0, Const.Slider.LabelHeight)
         textLabel.Position = UDim2.new(0, 0, 0, 0)
-        valueLabel.Size = UDim2.fromOffset(SLIDER_VALUE_WIDTH, SLIDER_LABEL_HEIGHT)
+        valueLabel.Size = UDim2.fromOffset(Const.Slider.ValueWidth, Const.Slider.LabelHeight)
         valueLabel.Position = UDim2.new(1, 0, 0, 0)
     end
 
@@ -3759,24 +3791,24 @@ Library:RegisterControlRenderer("Slider", function(control)
     trackContainer.Parent = root
 
     if isCompact then
-        trackContainer.Size = UDim2.new(1 - SLIDER_LABEL_WIDTH_SCALE, -(SLIDER_VALUE_WIDTH + SLIDER_LABEL_GAP * 2), 1, 0)
-        trackContainer.Position = UDim2.new(SLIDER_LABEL_WIDTH_SCALE, SLIDER_LABEL_GAP, 0, 0)
+        trackContainer.Size = UDim2.new(1 - Const.Slider.LabelWidthScale, -(Const.Slider.ValueWidth + Const.Slider.LabelGap * 2), 1, 0)
+        trackContainer.Position = UDim2.new(Const.Slider.LabelWidthScale, Const.Slider.LabelGap, 0, 0)
     else
-        trackContainer.Size = UDim2.new(1, 0, 0, rowHeight - SLIDER_LABEL_HEIGHT)
-        trackContainer.Position = UDim2.new(0, 0, 0, SLIDER_LABEL_HEIGHT)
+        trackContainer.Size = UDim2.new(1, 0, 0, rowHeight - Const.Slider.LabelHeight)
+        trackContainer.Position = UDim2.new(0, 0, 0, Const.Slider.LabelHeight)
     end
 
     local trackBg = Instance.new("Frame")
     trackBg.Name = "TrackBg"
     trackBg.AnchorPoint = Vector2.new(0, 0.5)
     trackBg.Position = UDim2.new(0, 0, 0.5, 0)
-    trackBg.Size = UDim2.new(1, 0, 0, SLIDER_TRACK_HEIGHT)
+    trackBg.Size = UDim2.new(1, 0, 0, Const.Slider.TrackHeight)
     trackBg.BackgroundColor3 = Library.Theme.Surface.S5
     trackBg.BorderSizePixel = 0
     trackBg.Parent = trackContainer
 
     local trackBgCorner = Instance.new("UICorner")
-    trackBgCorner.CornerRadius = UDim.new(0, SLIDER_TRACK_HEIGHT / 2)
+    trackBgCorner.CornerRadius = UDim.new(0, Const.Slider.TrackHeight / 2)
     trackBgCorner.Parent = trackBg
 
     local trackFill = Instance.new("Frame")
@@ -3788,21 +3820,21 @@ Library:RegisterControlRenderer("Slider", function(control)
     trackFill.Parent = trackBg
 
     local trackFillCorner = Instance.new("UICorner")
-    trackFillCorner.CornerRadius = UDim.new(0, SLIDER_TRACK_HEIGHT / 2)
+    trackFillCorner.CornerRadius = UDim.new(0, Const.Slider.TrackHeight / 2)
     trackFillCorner.Parent = trackFill
 
     local thumb = Instance.new("Frame")
     thumb.Name = "Thumb"
     thumb.AnchorPoint = Vector2.new(0.5, 0.5)
     thumb.Position = UDim2.new(0, 0, 0.5, 0)
-    thumb.Size = UDim2.fromOffset(SLIDER_THUMB_SIZE, SLIDER_THUMB_SIZE)
+    thumb.Size = UDim2.fromOffset(Const.Slider.ThumbSize, Const.Slider.ThumbSize)
     thumb.BackgroundColor3 = Library.Theme.Text.Primary
     thumb.BorderSizePixel = 0
     thumb.ZIndex = 2
     thumb.Parent = trackBg
 
     local thumbCorner = Instance.new("UICorner")
-    thumbCorner.CornerRadius = UDim.new(0, SLIDER_THUMB_SIZE / 2)
+    thumbCorner.CornerRadius = UDim.new(0, Const.Slider.ThumbSize / 2)
     thumbCorner.Parent = thumb
 
     local thumbStroke = Instance.new("UIStroke")
@@ -3850,8 +3882,8 @@ Library:RegisterControlRenderer("Slider", function(control)
             thumb.Position = targetPos
             trackFill.Size = targetFill
         else
-            tweenProperty(thumb, SLIDER_ANIMATION_TIME, {Position = targetPos})
-            tweenProperty(trackFill, SLIDER_ANIMATION_TIME, {Size = targetFill})
+            tweenProperty(thumb, Const.Slider.AnimTime, {Position = targetPos})
+            tweenProperty(trackFill, Const.Slider.AnimTime, {Size = targetFill})
         end
     end
 
@@ -3859,7 +3891,7 @@ Library:RegisterControlRenderer("Slider", function(control)
         cancelTweens()
 
         local isDisabled = control.Disabled
-        local duration = instant and 0 or SLIDER_ANIMATION_TIME
+        local duration = instant and 0 or Const.Slider.AnimTime
         local hoverTransparency = hovered and 0.82 or 1
 
         root.Visible = control.Visible
@@ -3916,7 +3948,7 @@ Library:RegisterControlRenderer("Slider", function(control)
     thumbHitbox.Name = "ThumbHitbox"
     thumbHitbox.AnchorPoint = Vector2.new(0.5, 0.5)
     thumbHitbox.Position = UDim2.fromScale(0.5, 0.5)
-    thumbHitbox.Size = UDim2.fromOffset(SLIDER_THUMB_HITBOX_SIZE, SLIDER_THUMB_HITBOX_SIZE)
+    thumbHitbox.Size = UDim2.fromOffset(Const.Slider.ThumbHitboxSize, Const.Slider.ThumbHitboxSize)
     thumbHitbox.BackgroundTransparency = 1
     thumbHitbox.BorderSizePixel = 0
     thumbHitbox.ZIndex = thumb.ZIndex + 1
@@ -3975,7 +4007,7 @@ Library:RegisterControlRenderer("Slider", function(control)
 end)
 
 Library:RegisterControlRenderer("RangeSlider", function(control)
-    local rowHeight = SLIDER_ROW_HEIGHT
+    local rowHeight = Const.Slider.RowHeight
 
     local root = Instance.new("TextButton")
     root.Name = "RangeSlider"
@@ -3999,7 +4031,7 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
 
     local textLabel = Instance.new("TextLabel")
     textLabel.Name = "Text"
-    textLabel.Size = UDim2.new(1, -SLIDER_VALUE_WIDTH, 0, SLIDER_LABEL_HEIGHT)
+    textLabel.Size = UDim2.new(1, -Const.Slider.ValueWidth, 0, Const.Slider.LabelHeight)
     textLabel.Position = UDim2.new(0, 0, 0, 0)
     textLabel.BackgroundTransparency = 1
     textLabel.BorderSizePixel = 0
@@ -4012,7 +4044,7 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
     local valueLabel = Instance.new("TextLabel")
     valueLabel.Name = "Value"
     valueLabel.AnchorPoint = Vector2.new(1, 0)
-    valueLabel.Size = UDim2.fromOffset(SLIDER_VALUE_WIDTH, SLIDER_LABEL_HEIGHT)
+    valueLabel.Size = UDim2.fromOffset(Const.Slider.ValueWidth, Const.Slider.LabelHeight)
     valueLabel.Position = UDim2.new(1, 0, 0, 0)
     valueLabel.BackgroundTransparency = 1
     valueLabel.BorderSizePixel = 0
@@ -4024,8 +4056,8 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
 
     local trackContainer = Instance.new("Frame")
     trackContainer.Name = "TrackContainer"
-    trackContainer.Size = UDim2.new(1, 0, 0, rowHeight - SLIDER_LABEL_HEIGHT)
-    trackContainer.Position = UDim2.new(0, 0, 0, SLIDER_LABEL_HEIGHT)
+    trackContainer.Size = UDim2.new(1, 0, 0, rowHeight - Const.Slider.LabelHeight)
+    trackContainer.Position = UDim2.new(0, 0, 0, Const.Slider.LabelHeight)
     trackContainer.BackgroundTransparency = 1
     trackContainer.BorderSizePixel = 0
     trackContainer.Parent = root
@@ -4034,13 +4066,13 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
     trackBg.Name = "TrackBg"
     trackBg.AnchorPoint = Vector2.new(0, 0.5)
     trackBg.Position = UDim2.new(0, 0, 0.5, 0)
-    trackBg.Size = UDim2.new(1, 0, 0, SLIDER_TRACK_HEIGHT)
+    trackBg.Size = UDim2.new(1, 0, 0, Const.Slider.TrackHeight)
     trackBg.BackgroundColor3 = Library.Theme.Surface.S5
     trackBg.BorderSizePixel = 0
     trackBg.Parent = trackContainer
 
     local trackBgCorner = Instance.new("UICorner")
-    trackBgCorner.CornerRadius = UDim.new(0, SLIDER_TRACK_HEIGHT / 2)
+    trackBgCorner.CornerRadius = UDim.new(0, Const.Slider.TrackHeight / 2)
     trackBgCorner.Parent = trackBg
 
     local trackFill = Instance.new("Frame")
@@ -4052,7 +4084,7 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
     trackFill.Parent = trackBg
 
     local trackFillCorner = Instance.new("UICorner")
-    trackFillCorner.CornerRadius = UDim.new(0, SLIDER_TRACK_HEIGHT / 2)
+    trackFillCorner.CornerRadius = UDim.new(0, Const.Slider.TrackHeight / 2)
     trackFillCorner.Parent = trackFill
 
     local function makeThumb(name)
@@ -4060,13 +4092,13 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
         t.Name = name
         t.AnchorPoint = Vector2.new(0.5, 0.5)
         t.Position = UDim2.new(0, 0, 0.5, 0)
-        t.Size = UDim2.fromOffset(SLIDER_THUMB_SIZE, SLIDER_THUMB_SIZE)
+        t.Size = UDim2.fromOffset(Const.Slider.ThumbSize, Const.Slider.ThumbSize)
         t.BackgroundColor3 = Library.Theme.Text.Primary
         t.BorderSizePixel = 0
         t.ZIndex = 2
         t.Parent = trackBg
         local c = Instance.new("UICorner")
-        c.CornerRadius = UDim.new(0, SLIDER_THUMB_SIZE / 2)
+        c.CornerRadius = UDim.new(0, Const.Slider.ThumbSize / 2)
         c.Parent = t
         local s = Instance.new("UIStroke")
         s.Thickness = 1.5
@@ -4078,7 +4110,7 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
         h.Name = "Hitbox"
         h.AnchorPoint = Vector2.new(0.5, 0.5)
         h.Position = UDim2.fromScale(0.5, 0.5)
-        h.Size = UDim2.fromOffset(SLIDER_THUMB_HITBOX_SIZE, SLIDER_THUMB_HITBOX_SIZE)
+        h.Size = UDim2.fromOffset(Const.Slider.ThumbHitboxSize, Const.Slider.ThumbHitboxSize)
         h.BackgroundTransparency = 1
         h.BorderSizePixel = 0
         h.ZIndex = t.ZIndex + 1
@@ -4133,9 +4165,9 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
             trackFill.Position = UDim2.new(pLow, 0, 0, 0)
             trackFill.Size = UDim2.new(pHigh - pLow, 0, 1, 0)
         else
-            tweenProperty(thumbLow, SLIDER_ANIMATION_TIME, {Position = UDim2.new(pLow, 0, 0.5, 0)})
-            tweenProperty(thumbHigh, SLIDER_ANIMATION_TIME, {Position = UDim2.new(pHigh, 0, 0.5, 0)})
-            tweenProperty(trackFill, SLIDER_ANIMATION_TIME, {
+            tweenProperty(thumbLow, Const.Slider.AnimTime, {Position = UDim2.new(pLow, 0, 0.5, 0)})
+            tweenProperty(thumbHigh, Const.Slider.AnimTime, {Position = UDim2.new(pHigh, 0, 0.5, 0)})
+            tweenProperty(trackFill, Const.Slider.AnimTime, {
                 Position = UDim2.new(pLow, 0, 0, 0),
                 Size = UDim2.new(pHigh - pLow, 0, 1, 0),
             })
@@ -4145,7 +4177,7 @@ Library:RegisterControlRenderer("RangeSlider", function(control)
     local function applyVisual(instant)
         cancelTweens()
         local isDisabled = control.Disabled
-        local duration = instant and 0 or SLIDER_ANIMATION_TIME
+        local duration = instant and 0 or Const.Slider.AnimTime
         local hoverTransparency = hovered and 0.82 or 1
 
         root.Visible = control.Visible
@@ -4287,13 +4319,13 @@ end)
 Library:RegisterControlRenderer("Input", function(control)
     local root = Instance.new("Frame")
     root.Name = "Input"
-    root.Size = UDim2.new(1, 0, 0, INPUT_ROW_HEIGHT)
+    root.Size = UDim2.new(1, 0, 0, Const.Input.RowHeight)
     root.BackgroundTransparency = 1
     root.BorderSizePixel = 0
 
     local textLabel = Instance.new("TextLabel")
     textLabel.Name = "Text"
-    textLabel.Size = UDim2.new(INPUT_LABEL_WIDTH_SCALE, 0, 1, 0)
+    textLabel.Size = UDim2.new(Const.Input.LabelWidthScale, 0, 1, 0)
     textLabel.Position = UDim2.new(0, 0, 0, 0)
     textLabel.BackgroundTransparency = 1
     textLabel.BorderSizePixel = 0
@@ -4307,14 +4339,14 @@ Library:RegisterControlRenderer("Input", function(control)
     inputContainer.Name = "InputContainer"
     inputContainer.AnchorPoint = Vector2.new(1, 0.5)
     inputContainer.Position = UDim2.new(1, 0, 0.5, 0)
-    inputContainer.Size = UDim2.new(1 - INPUT_LABEL_WIDTH_SCALE, -INPUT_LABEL_GAP, 1, -2)
+    inputContainer.Size = UDim2.new(1 - Const.Input.LabelWidthScale, -Const.Input.LabelGap, 1, -2)
     inputContainer.BackgroundColor3 = Library.Theme.Surface.S3
     inputContainer.BorderSizePixel = 0
     inputContainer.ClipsDescendants = true
     inputContainer.Parent = root
 
     local containerCorner = Instance.new("UICorner")
-    containerCorner.CornerRadius = UDim.new(0, INPUT_CORNER_RADIUS)
+    containerCorner.CornerRadius = UDim.new(0, Const.Input.CornerRadius)
     containerCorner.Parent = inputContainer
 
     local containerStroke = Instance.new("UIStroke")
@@ -4414,7 +4446,7 @@ Library:RegisterControlRenderer("Input", function(control)
         cancelTweens()
         local isDisabled = control.Disabled
         local isRisky = control.Risky
-        local duration = instant and 0 or INPUT_ANIMATION_TIME
+        local duration = instant and 0 or Const.Input.AnimTime
 
         root.Visible = control.Visible
         textLabel.Text = control.Text
@@ -4558,7 +4590,7 @@ end
 
 Library:RegisterControlRenderer("KeyPicker", function(control)
     local isAttached = control.Parent and control.Parent.Kind ~= "GroupBox"
-    local buttonHeight = isAttached and KEYPICKER_ATTACHED_HEIGHT or KEYPICKER_BUTTON_HEIGHT
+    local buttonHeight = isAttached and Const.KeyPicker.AttachedHeight or Const.KeyPicker.ButtonHeight
 
     local root = Instance.new("Frame")
     root.Name = "KeyPicker"
@@ -4582,7 +4614,7 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
     keyButton.BorderSizePixel = 0
 
     local keyCorner = Instance.new("UICorner")
-    keyCorner.CornerRadius = UDim.new(0, KEYPICKER_CORNER_RADIUS)
+    keyCorner.CornerRadius = UDim.new(0, Const.KeyPicker.CornerRadius)
     keyCorner.Parent = keyButton
 
     local keyStroke = Instance.new("UIStroke")
@@ -4615,7 +4647,7 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
     end
 
     local function updateKeyButtonWidth()
-        local width = math.max(KEYPICKER_BUTTON_MIN_WIDTH, keyButton.TextBounds.X + 14)
+        local width = math.max(Const.KeyPicker.ButtonMinWidth, keyButton.TextBounds.X + 14)
         keyButton.Size = UDim2.fromOffset(width, buttonHeight)
         if isAttached then
             root.Size = UDim2.fromOffset(width, buttonHeight)
@@ -4623,10 +4655,10 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
     end
 
     if isAttached then
-        root.Size = UDim2.fromOffset(KEYPICKER_BUTTON_MIN_WIDTH, buttonHeight)
+        root.Size = UDim2.fromOffset(Const.KeyPicker.ButtonMinWidth, buttonHeight)
         keyButton.Parent = root
     else
-        root.Size = UDim2.new(1, 0, 0, KEYPICKER_ROW_HEIGHT)
+        root.Size = UDim2.new(1, 0, 0, Const.KeyPicker.RowHeight)
 
         textLabel = Instance.new("TextLabel")
         textLabel.Name = "Text"
@@ -4643,7 +4675,7 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
         rail.AnchorPoint = Vector2.new(1, 0.5)
         rail.Position = UDim2.new(1, 0, 0.5, 0)
         rail.AutomaticSize = Enum.AutomaticSize.X
-        rail.Size = UDim2.new(0, 0, 0, KEYPICKER_ROW_HEIGHT)
+        rail.Size = UDim2.new(0, 0, 0, Const.KeyPicker.RowHeight)
         rail.BackgroundTransparency = 1
         rail.BorderSizePixel = 0
         rail.Parent = root
@@ -4653,13 +4685,13 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
         railLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
         railLayout.VerticalAlignment = Enum.VerticalAlignment.Center
         railLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        railLayout.Padding = UDim.new(0, CONTROL_ADDON_GAP)
+        railLayout.Padding = UDim.new(0, Const.Control.AddonGap)
         railLayout.Parent = rail
 
         modeButton = Instance.new("TextButton")
         modeButton.Name = "ModeButton"
         modeButton.AutoButtonColor = false
-        modeButton.Size = UDim2.fromOffset(KEYPICKER_MODE_WIDTH, buttonHeight)
+        modeButton.Size = UDim2.fromOffset(Const.KeyPicker.ModeWidth, buttonHeight)
         modeButton.BackgroundColor3 = Library.Theme.Surface.S2
         modeButton.BorderSizePixel = 0
         modeButton.TextSize = 10
@@ -4668,7 +4700,7 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
         modeButton.Parent = rail
 
         local modeCorner = Instance.new("UICorner")
-        modeCorner.CornerRadius = UDim.new(0, KEYPICKER_CORNER_RADIUS)
+        modeCorner.CornerRadius = UDim.new(0, Const.KeyPicker.CornerRadius)
         modeCorner.Parent = modeButton
 
         local modeStroke = Instance.new("UIStroke")
@@ -4695,7 +4727,7 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
         local isDisabled = control.Disabled
         local isListening = control._listening
         local isActive = control:GetState()
-        local duration = instant and 0 or KEYPICKER_ANIMATION_TIME
+        local duration = instant and 0 or Const.KeyPicker.AnimTime
         local keyDisplay = isListening and "..." or control:GetDisplayValue()
 
         root.Visible = control.Visible
@@ -4810,8 +4842,8 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     local root = Instance.new("Frame")
     root.Name = "ColorPicker"
     root.Size = isAttached
-        and UDim2.fromOffset(COLORPICKER_ATTACHED_WIDTH, COLORPICKER_ATTACHED_HEIGHT)
-        or UDim2.new(1, 0, 0, COLORPICKER_ROW_HEIGHT)
+        and UDim2.fromOffset(Const.ColorPicker.AttachedWidth, Const.ColorPicker.AttachedHeight)
+        or UDim2.new(1, 0, 0, Const.ColorPicker.RowHeight)
     root.BackgroundTransparency = 1
     root.BorderSizePixel = 0
 
@@ -4819,7 +4851,7 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     if not isAttached then
         textLabel = Instance.new("TextLabel")
         textLabel.Name = "Text"
-        textLabel.Size = UDim2.new(1 - COLORPICKER_DISPLAY_WIDTH_SCALE, -DROPDOWN_LABEL_GAP, 1, 0)
+        textLabel.Size = UDim2.new(1 - Const.ColorPicker.DisplayWidthScale, -Const.Dropdown.LabelGap, 1, 0)
         textLabel.BackgroundTransparency = 1
         textLabel.BorderSizePixel = 0
         textLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -4837,7 +4869,7 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     swatch.Position = isAttached and UDim2.new(0, 0, 0.5, 0) or UDim2.new(1, 0, 0.5, 0)
     swatch.Size = isAttached
         and UDim2.new(1, 0, 1, 0)
-        or UDim2.new(COLORPICKER_DISPLAY_WIDTH_SCALE, -DROPDOWN_LABEL_GAP, 1, -2)
+        or UDim2.new(Const.ColorPicker.DisplayWidthScale, -Const.Dropdown.LabelGap, 1, -2)
     swatch.BackgroundColor3 = control.Value
     swatch.BorderSizePixel = 0
     swatch.AutoButtonColor = false
@@ -4845,7 +4877,7 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     swatch.Parent = root
 
     local swatchCorner = Instance.new("UICorner")
-    swatchCorner.CornerRadius = UDim.new(0, DROPDOWN_CORNER_RADIUS)
+    swatchCorner.CornerRadius = UDim.new(0, Const.Dropdown.CornerRadius)
     swatchCorner.Parent = swatch
 
     local swatchStroke = Instance.new("UIStroke")
@@ -4871,15 +4903,15 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
 
     -- ── Popup ────────────────────────────────────────────────
     local hasAlpha = control.AllowTransparency
-    local popupW = COLORPICKER_POPUP_PADDING * 2
-        + COLORPICKER_SV_SIZE
-        + COLORPICKER_HUE_GAP
-        + COLORPICKER_HUE_WIDTH
-        + (hasAlpha and (COLORPICKER_HUE_GAP + COLORPICKER_HUE_WIDTH) or 0)
-    local popupH = COLORPICKER_POPUP_PADDING * 2
-        + COLORPICKER_SV_SIZE
-        + COLORPICKER_HUE_GAP
-        + COLORPICKER_HEX_HEIGHT
+    local popupW = Const.ColorPicker.PopupPadding * 2
+        + Const.ColorPicker.SvSize
+        + Const.ColorPicker.HueGap
+        + Const.ColorPicker.HueWidth
+        + (hasAlpha and (Const.ColorPicker.HueGap + Const.ColorPicker.HueWidth) or 0)
+    local popupH = Const.ColorPicker.PopupPadding * 2
+        + Const.ColorPicker.SvSize
+        + Const.ColorPicker.HueGap
+        + Const.ColorPicker.HexHeight
 
     local popup = Instance.new("Frame")
     popup.Name = "ColorPickerPopup"
@@ -4892,7 +4924,7 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     popup.Parent = ScreenGui
 
     local popupCorner = Instance.new("UICorner")
-    popupCorner.CornerRadius = UDim.new(0, GROUPBOX_CORNER_RADIUS)
+    popupCorner.CornerRadius = UDim.new(0, Const.GroupBox.CornerRadius)
     popupCorner.Parent = popup
 
     local popupStroke = Instance.new("UIStroke")
@@ -4902,13 +4934,13 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     popupStroke.Transparency = 0
     popupStroke.Parent = popup
 
-    local pad = COLORPICKER_POPUP_PADDING
+    local pad = Const.ColorPicker.PopupPadding
 
     -- SV square
     local svFrame = Instance.new("TextButton")
     svFrame.Name = "SVMap"
     svFrame.Position = UDim2.fromOffset(pad, pad)
-    svFrame.Size = UDim2.fromOffset(COLORPICKER_SV_SIZE, COLORPICKER_SV_SIZE)
+    svFrame.Size = UDim2.fromOffset(Const.ColorPicker.SvSize, Const.ColorPicker.SvSize)
     svFrame.BackgroundColor3 = Color3.fromHSV(control._hue, 1, 1)
     svFrame.BorderSizePixel = 0
     svFrame.AutoButtonColor = false
@@ -4958,7 +4990,7 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     svCursor.Name = "SVCursor"
     svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
     svCursor.Position = UDim2.fromScale(control._sat, 1 - control._val)
-    svCursor.Size = UDim2.fromOffset(COLORPICKER_CURSOR_SIZE, COLORPICKER_CURSOR_SIZE)
+    svCursor.Size = UDim2.fromOffset(Const.ColorPicker.CursorSize, Const.ColorPicker.CursorSize)
     svCursor.BackgroundColor3 = Color3.new(1, 1, 1)
     svCursor.BorderSizePixel = 0
     svCursor.ZIndex = 25
@@ -4974,11 +5006,11 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     svCursorStroke.Parent = svCursor
 
     -- Hue bar
-    local hueBarX = pad + COLORPICKER_SV_SIZE + COLORPICKER_HUE_GAP
+    local hueBarX = pad + Const.ColorPicker.SvSize + Const.ColorPicker.HueGap
     local hueBar = Instance.new("TextButton")
     hueBar.Name = "HueBar"
     hueBar.Position = UDim2.fromOffset(hueBarX, pad)
-    hueBar.Size = UDim2.fromOffset(COLORPICKER_HUE_WIDTH, COLORPICKER_SV_SIZE)
+    hueBar.Size = UDim2.fromOffset(Const.ColorPicker.HueWidth, Const.ColorPicker.SvSize)
     hueBar.BackgroundColor3 = Color3.new(1, 1, 1)
     hueBar.BorderSizePixel = 0
     hueBar.AutoButtonColor = false
@@ -5018,11 +5050,11 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     -- Alpha bar (optional)
     local alphaBar, alphaCursor, alphaColor
     if hasAlpha then
-        local alphaBarX = hueBarX + COLORPICKER_HUE_WIDTH + COLORPICKER_HUE_GAP
+        local alphaBarX = hueBarX + Const.ColorPicker.HueWidth + Const.ColorPicker.HueGap
         alphaBar = Instance.new("TextButton")
         alphaBar.Name = "AlphaBar"
         alphaBar.Position = UDim2.fromOffset(alphaBarX, pad)
-        alphaBar.Size = UDim2.fromOffset(COLORPICKER_HUE_WIDTH, COLORPICKER_SV_SIZE)
+        alphaBar.Size = UDim2.fromOffset(Const.ColorPicker.HueWidth, Const.ColorPicker.SvSize)
         alphaBar.BackgroundColor3 = Color3.new(1, 1, 1)
         alphaBar.BorderSizePixel = 0
         alphaBar.AutoButtonColor = false
@@ -5082,18 +5114,18 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     end
 
     -- Hex input
-    local hexY = pad + COLORPICKER_SV_SIZE + COLORPICKER_HUE_GAP
+    local hexY = pad + Const.ColorPicker.SvSize + Const.ColorPicker.HueGap
     local hexContainer = Instance.new("Frame")
     hexContainer.Name = "HexContainer"
     hexContainer.Position = UDim2.fromOffset(pad, hexY)
-    hexContainer.Size = UDim2.new(1, -pad * 2, 0, COLORPICKER_HEX_HEIGHT)
+    hexContainer.Size = UDim2.new(1, -pad * 2, 0, Const.ColorPicker.HexHeight)
     hexContainer.BackgroundColor3 = Library.Theme.Surface.S3
     hexContainer.BorderSizePixel = 0
     hexContainer.ZIndex = 21
     hexContainer.Parent = popup
 
     local hexContainerCorner = Instance.new("UICorner")
-    hexContainerCorner.CornerRadius = UDim.new(0, INPUT_CORNER_RADIUS)
+    hexContainerCorner.CornerRadius = UDim.new(0, Const.Input.CornerRadius)
     hexContainerCorner.Parent = hexContainer
 
     local hexContainerStroke = Instance.new("UIStroke")
@@ -5185,20 +5217,20 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
         if instant then
             svCursor.Position = targetPos
         else
-            tweenProp(svCursor, COLORPICKER_ANIMATION_TIME, {Position = targetPos})
+            tweenProp(svCursor, Const.ColorPicker.AnimTime, {Position = targetPos})
         end
         local hTargetPos = UDim2.fromScale(0.5, h)
         if instant then
             hueCursor.Position = hTargetPos
         else
-            tweenProp(hueCursor, COLORPICKER_ANIMATION_TIME, {Position = hTargetPos})
+            tweenProp(hueCursor, Const.ColorPicker.AnimTime, {Position = hTargetPos})
         end
         if alphaCursor then
             local aTargetPos = UDim2.fromScale(0.5, control.Transparency)
             if instant then
                 alphaCursor.Position = aTargetPos
             else
-                tweenProp(alphaCursor, COLORPICKER_ANIMATION_TIME, {Position = aTargetPos})
+                tweenProp(alphaCursor, Const.ColorPicker.AnimTime, {Position = aTargetPos})
             end
         end
         updateSwatchDisplay()
@@ -5212,17 +5244,17 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
         local pw = popup.AbsoluteSize.X > 0 and popup.AbsoluteSize.X or popupW
         local ph = popup.AbsoluteSize.Y > 0 and popup.AbsoluteSize.Y or popupH
 
-        local x = absPos.X + absSize.X + COLORPICKER_POPUP_GAP
+        local x = absPos.X + absSize.X + Const.ColorPicker.PopupGap
         local y = absPos.Y
 
-        if x + pw > screenSize.X - COLORPICKER_POPUP_EDGE_PADDING then
-            x = absPos.X - pw - COLORPICKER_POPUP_GAP
+        if x + pw > screenSize.X - Const.ColorPicker.PopupEdgePadding then
+            x = absPos.X - pw - Const.ColorPicker.PopupGap
         end
-        if y + ph > screenSize.Y - COLORPICKER_POPUP_EDGE_PADDING then
-            y = screenSize.Y - COLORPICKER_POPUP_EDGE_PADDING - ph
+        if y + ph > screenSize.Y - Const.ColorPicker.PopupEdgePadding then
+            y = screenSize.Y - Const.ColorPicker.PopupEdgePadding - ph
         end
-        x = math.max(COLORPICKER_POPUP_EDGE_PADDING, x)
-        y = math.max(COLORPICKER_POPUP_EDGE_PADDING, y)
+        x = math.max(Const.ColorPicker.PopupEdgePadding, x)
+        y = math.max(Const.ColorPicker.PopupEdgePadding, y)
 
         popup.Position = UDim2.fromOffset(x, y)
     end
@@ -5381,7 +5413,7 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     -- ── applyVisual ───────────────────────────────────────────
     local function applyVisual(instant)
         local isDisabled = control.Disabled
-        local dur = instant and 0 or COLORPICKER_ANIMATION_TIME
+        local dur = instant and 0 or Const.ColorPicker.AnimTime
         root.Visible = control.Visible
         if textLabel then
             textLabel.Text = control.Text
@@ -5428,7 +5460,7 @@ end)
 Library:RegisterControlRenderer("Dropdown", function(control)
     local root = Instance.new("TextButton")
     root.Name = "Dropdown"
-    root.Size = UDim2.new(1, 0, 0, DROPDOWN_ROW_HEIGHT)
+    root.Size = UDim2.new(1, 0, 0, Const.Dropdown.RowHeight)
     root.BackgroundTransparency = 1
     root.BorderSizePixel = 0
     root.AutoButtonColor = false
@@ -5448,7 +5480,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
 
     local label = Instance.new("TextLabel")
     label.Name = "Text"
-    label.Size = UDim2.new(DROPDOWN_LABEL_WIDTH_SCALE, -DROPDOWN_LABEL_GAP, 1, 0)
+    label.Size = UDim2.new(Const.Dropdown.LabelWidthScale, -Const.Dropdown.LabelGap, 1, 0)
     label.BackgroundTransparency = 1
     label.BorderSizePixel = 0
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -5461,14 +5493,14 @@ Library:RegisterControlRenderer("Dropdown", function(control)
 
     local trigger = Instance.new("Frame")
     trigger.Name = "Trigger"
-    trigger.Position = UDim2.new(DROPDOWN_LABEL_WIDTH_SCALE, DROPDOWN_LABEL_GAP, 0, 0)
-    trigger.Size = UDim2.new(1 - DROPDOWN_LABEL_WIDTH_SCALE, -DROPDOWN_LABEL_GAP, 1, 0)
+    trigger.Position = UDim2.new(Const.Dropdown.LabelWidthScale, Const.Dropdown.LabelGap, 0, 0)
+    trigger.Size = UDim2.new(1 - Const.Dropdown.LabelWidthScale, -Const.Dropdown.LabelGap, 1, 0)
     trigger.BackgroundColor3 = Library.Theme.Surface.S2
     trigger.BorderSizePixel = 0
     trigger.Parent = root
 
     local triggerCorner = Instance.new("UICorner")
-    triggerCorner.CornerRadius = UDim.new(0, DROPDOWN_CORNER_RADIUS)
+    triggerCorner.CornerRadius = UDim.new(0, Const.Dropdown.CornerRadius)
     triggerCorner.Parent = trigger
 
     local triggerStroke = Instance.new("UIStroke")
@@ -5479,7 +5511,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
     local valueLabel = Instance.new("TextLabel")
     valueLabel.Name = "Value"
     valueLabel.Position = UDim2.new(0, 8, 0, 0)
-    valueLabel.Size = UDim2.new(1, -(DROPDOWN_INDICATOR_WIDTH + 16), 1, 0)
+    valueLabel.Size = UDim2.new(1, -(Const.Dropdown.IndicatorWidth + 16), 1, 0)
     valueLabel.BackgroundTransparency = 1
     valueLabel.BorderSizePixel = 0
     valueLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -5494,7 +5526,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
     indicator.Name = "Indicator"
     indicator.AnchorPoint = Vector2.new(1, 0.5)
     indicator.Position = UDim2.new(1, -8, 0.5, 0)
-    indicator.Size = UDim2.fromOffset(DROPDOWN_INDICATOR_WIDTH, 12)
+    indicator.Size = UDim2.fromOffset(Const.Dropdown.IndicatorWidth, 12)
     indicator.BackgroundTransparency = 1
     indicator.BorderSizePixel = 0
     indicator.Text = "+"
@@ -5515,8 +5547,8 @@ Library:RegisterControlRenderer("Dropdown", function(control)
 
     local menuSurface = Instance.new("Frame")
     menuSurface.Name = "Surface"
-    menuSurface.Position = UDim2.fromOffset(DROPDOWN_MENU_INSET, DROPDOWN_MENU_INSET)
-    menuSurface.Size = UDim2.new(1, -(DROPDOWN_MENU_INSET * 2), 1, -(DROPDOWN_MENU_INSET * 2))
+    menuSurface.Position = UDim2.fromOffset(Const.Dropdown.MenuInset, Const.Dropdown.MenuInset)
+    menuSurface.Size = UDim2.new(1, -(Const.Dropdown.MenuInset * 2), 1, -(Const.Dropdown.MenuInset * 2))
     menuSurface.BackgroundColor3 = Library.Theme.Surface.S1
     menuSurface.BackgroundTransparency = 1
     menuSurface.BorderSizePixel = 0
@@ -5538,7 +5570,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
     local searchBox = Instance.new("TextBox")
     searchBox.Name = "Search"
     searchBox.Position = UDim2.new(0, 8, 0, 0)
-    searchBox.Size = UDim2.new(1, -(DROPDOWN_INDICATOR_WIDTH + 16), 1, 0)
+    searchBox.Size = UDim2.new(1, -(Const.Dropdown.IndicatorWidth + 16), 1, 0)
     searchBox.BackgroundColor3 = Library.Theme.Surface.S2
     searchBox.BackgroundTransparency = 1
     searchBox.BorderSizePixel = 0
@@ -5588,7 +5620,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
     listFrame.Parent = menuSurface
 
     local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UDim.new(0, DROPDOWN_MENU_ITEM_PADDING)
+    listLayout.Padding = UDim.new(0, Const.Dropdown.MenuItemPadding)
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
     listLayout.Parent = listFrame
 
@@ -5758,7 +5790,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
         local triggerPos = trigger.AbsolutePosition - screenGuiPos
         local triggerSize = trigger.AbsoluteSize
         local x = math.clamp(triggerPos.X, 8, math.max(8, screenSize.X - menuWidth - 8))
-        local y = triggerPos.Y + triggerSize.Y + DROPDOWN_MENU_GAP
+        local y = triggerPos.Y + triggerSize.Y + Const.Dropdown.MenuGap
         local maxHeightBelow = math.max(0, screenSize.Y - y - 8)
 
         return menuWidth, x, y, maxHeightBelow
@@ -5787,8 +5819,8 @@ Library:RegisterControlRenderer("Dropdown", function(control)
         if #filteredValues == 0 then
             local emptyLabel = Instance.new("TextLabel")
             emptyLabel.Name = "Empty"
-            emptyLabel.Position = UDim2.fromOffset(DROPDOWN_MENU_ITEM_INSET, 0)
-            emptyLabel.Size = UDim2.new(1, -(DROPDOWN_MENU_ITEM_INSET * 2), 0, DROPDOWN_MENU_ITEM_HEIGHT)
+            emptyLabel.Position = UDim2.fromOffset(Const.Dropdown.MenuItemInset, 0)
+            emptyLabel.Size = UDim2.new(1, -(Const.Dropdown.MenuItemInset * 2), 0, Const.Dropdown.MenuItemHeight)
             emptyLabel.BackgroundTransparency = 1
             emptyLabel.BorderSizePixel = 0
             emptyLabel.Text = "No matches"
@@ -5803,8 +5835,8 @@ Library:RegisterControlRenderer("Dropdown", function(control)
             for _, value in ipairs(filteredValues) do
                 local item = Instance.new("TextButton")
                 item.Name = value
-                item.Position = UDim2.fromOffset(DROPDOWN_MENU_ITEM_INSET, 0)
-                item.Size = UDim2.new(1, -(DROPDOWN_MENU_ITEM_INSET * 2), 0, DROPDOWN_MENU_ITEM_HEIGHT)
+                item.Position = UDim2.fromOffset(Const.Dropdown.MenuItemInset, 0)
+                item.Size = UDim2.new(1, -(Const.Dropdown.MenuItemInset * 2), 0, Const.Dropdown.MenuItemHeight)
                 item.BackgroundColor3 = Library.Theme.Surface.S2
                 item.BackgroundTransparency = 1
                 item.BorderSizePixel = 0
@@ -5868,25 +5900,25 @@ Library:RegisterControlRenderer("Dropdown", function(control)
 
         local menuWidth, menuX, menuY, maxHeightBelow = getMenuMetrics()
         local itemCount = math.max(1, #filteredValues)
-        local contentHeight = (itemCount * DROPDOWN_MENU_ITEM_HEIGHT)
-            + (math.max(0, itemCount - 1) * DROPDOWN_MENU_ITEM_PADDING)
+        local contentHeight = (itemCount * Const.Dropdown.MenuItemHeight)
+            + (math.max(0, itemCount - 1) * Const.Dropdown.MenuItemPadding)
         local visibleCount = math.max(1, math.min(control.MaxVisibleDropdownItems, itemCount))
-        local desiredListHeight = (visibleCount * DROPDOWN_MENU_ITEM_HEIGHT)
-            + (math.max(0, visibleCount - 1) * DROPDOWN_MENU_ITEM_PADDING)
-        local topOffset = DROPDOWN_MENU_PADDING
+        local desiredListHeight = (visibleCount * Const.Dropdown.MenuItemHeight)
+            + (math.max(0, visibleCount - 1) * Const.Dropdown.MenuItemPadding)
+        local topOffset = Const.Dropdown.MenuPadding
 
-        local availableListHeight = math.max(0, maxHeightBelow - topOffset - DROPDOWN_MENU_PADDING)
+        local availableListHeight = math.max(0, maxHeightBelow - topOffset - Const.Dropdown.MenuPadding)
         local actualListHeight = math.min(desiredListHeight, availableListHeight)
 
         listFrame.Visible = actualListHeight > 0
-        listFrame.Position = UDim2.fromOffset(DROPDOWN_MENU_PADDING, topOffset)
-        listFrame.Size = UDim2.new(1, -(DROPDOWN_MENU_PADDING * 2), 0, actualListHeight)
+        listFrame.Position = UDim2.fromOffset(Const.Dropdown.MenuPadding, topOffset)
+        listFrame.Size = UDim2.new(1, -(Const.Dropdown.MenuPadding * 2), 0, actualListHeight)
         listFrame.CanvasSize = UDim2.fromOffset(0, contentHeight)
-        menuRoot.Position = UDim2.fromOffset(menuX - DROPDOWN_MENU_INSET, menuY - DROPDOWN_MENU_INSET)
+        menuRoot.Position = UDim2.fromOffset(menuX - Const.Dropdown.MenuInset, menuY - Const.Dropdown.MenuInset)
 
         return UDim2.fromOffset(
-            menuWidth + (DROPDOWN_MENU_INSET * 2),
-            topOffset + actualListHeight + DROPDOWN_MENU_PADDING + (DROPDOWN_MENU_INSET * 2)
+            menuWidth + (Const.Dropdown.MenuInset * 2),
+            topOffset + actualListHeight + Const.Dropdown.MenuPadding + (Const.Dropdown.MenuInset * 2)
         )
     end
 
@@ -5913,8 +5945,8 @@ Library:RegisterControlRenderer("Dropdown", function(control)
         cancelMenuVisualTweens()
 
         local closedSize = UDim2.fromOffset(
-            math.max(1, trigger.AbsoluteSize.X) + (DROPDOWN_MENU_INSET * 2),
-            DROPDOWN_CLOSED_HEIGHT
+            math.max(1, trigger.AbsoluteSize.X) + (Const.Dropdown.MenuInset * 2),
+            Const.Dropdown.ClosedHeight
         )
         if instant then
             menuRoot.Visible = false
@@ -5925,10 +5957,10 @@ Library:RegisterControlRenderer("Dropdown", function(control)
             return
         end
 
-        tweenMenuVisual(DROPDOWN_ANIMATION_TIME, 1, 1)
+        tweenMenuVisual(Const.Dropdown.AnimTime, 1, 1)
         menuTween = TweenService:Create(
             menuRoot,
-            TweenInfo.new(DROPDOWN_ANIMATION_TIME, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            TweenInfo.new(Const.Dropdown.AnimTime, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
             { Size = closedSize }
         )
         menuTweenCompletedConnection = menuTween.Completed:Connect(function(playbackState)
@@ -5957,19 +5989,19 @@ Library:RegisterControlRenderer("Dropdown", function(control)
         local targetSize = rebuildMenu()
         cancelMenuTween()
         cancelMenuVisualTweens()
-        menuRoot.Size = UDim2.fromOffset(targetSize.X.Offset, DROPDOWN_CLOSED_HEIGHT)
+        menuRoot.Size = UDim2.fromOffset(targetSize.X.Offset, Const.Dropdown.ClosedHeight)
         menuSurface.BackgroundTransparency = 1
         menuStroke.Transparency = 1
         menuTween = TweenService:Create(
             menuRoot,
-            TweenInfo.new(DROPDOWN_ANIMATION_TIME, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            TweenInfo.new(Const.Dropdown.AnimTime, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
             { Size = targetSize }
         )
         menuTweenCompletedConnection = menuTween.Completed:Connect(function()
             menuTweenCompletedConnection = nil
             menuTween = nil
         end)
-        tweenMenuVisual(DROPDOWN_ANIMATION_TIME, 0, 0.1)
+        tweenMenuVisual(Const.Dropdown.AnimTime, 0, 0.1)
         menuTween:Play()
 
         if control.Searchable then
@@ -5988,7 +6020,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
         local baseTextColor = control.Risky and Library.Theme.Status.Error or Library.Theme.Text.Primary
         local displayText, isPlaceholder = getDisplayText()
         local hoverTransparency = (hovered or opened) and 0.84 or 1
-        local duration = instant and 0 or DROPDOWN_ANIMATION_TIME
+        local duration = instant and 0 or Const.Dropdown.AnimTime
 
         root.Visible = control.Visible
         label.Text = control.Text
@@ -6150,7 +6182,7 @@ Library:RegisterControlRenderer("Dropdown", function(control)
     }
 end)
 
-local ActiveTab = Tab.new(Library, DEFAULT_TAB_NAME)
+local ActiveTab = Tab.new(Library, Const.GroupBox.DefaultTabName)
 RegisterComponent(ActiveTab)
 Renderer:BindTab(ActiveTab)
 
@@ -6217,7 +6249,7 @@ end
 
 function RuntimeHelpers.UpdateAffordanceHoverState()
     local isActive = RuntimeState.draggingResize or RuntimeState.draggingWindow or RuntimeState.resizeHandleHovered or RuntimeState.bottomDragHovered
-    local targetTransparency = isActive and RESIZE_HANDLE_ACTIVE_TRANSPARENCY or RESIZE_HANDLE_IDLE_TRANSPARENCY
+    local targetTransparency = isActive and Const.ResizeHandle.ActiveTransparency or Const.ResizeHandle.IdleTransparency
     local duration = isActive and 0.1 or 0.18
 
     RuntimeHelpers.SetResizeHandleTransparency(targetTransparency, duration)
@@ -6330,8 +6362,8 @@ function RuntimeHelpers.BeginGroupBoxDrag(groupBox, inputPosition)
         RuntimeState.gbDragPointer.Y - localRootY
     )
 
-    local placeholderWidth = math.max(1, absSize.X - GROUPBOX_DRAG_PLACEHOLDER_INSET * 2)
-    local placeholderHeight = math.max(1, absSize.Y - GROUPBOX_DRAG_PLACEHOLDER_INSET * 2)
+    local placeholderWidth = math.max(1, absSize.X - Const.GroupBox.DragPlaceholderInset * 2)
+    local placeholderHeight = math.max(1, absSize.Y - Const.GroupBox.DragPlaceholderInset * 2)
     local placeholder = Instance.new("Frame")
     placeholder.Name = "GBDragPlaceholder"
     placeholder.Size = UDim2.fromOffset(absSize.X, absSize.Y)
@@ -6357,7 +6389,7 @@ function RuntimeHelpers.BeginGroupBoxDrag(groupBox, inputPosition)
     placeholderStroke.Parent = placeholderOutline
 
     local placeholderCorner = Instance.new("UICorner")
-    placeholderCorner.CornerRadius = UDim.new(0, GROUPBOX_CORNER_RADIUS)
+    placeholderCorner.CornerRadius = UDim.new(0, Const.GroupBox.CornerRadius)
     placeholderCorner.Parent = placeholderOutline
 
     RuntimeState.gbDragPlaceholder = placeholder
@@ -6625,7 +6657,7 @@ TrackConnection(RunService.RenderStepped:Connect(function()
         local clampedTopLeft = ClampWindowTopLeft(
             RuntimeState.windowDragStartTopLeft + delta,
             windowWidth,
-            BOTTOM_DRAG_BAR_OUTSET + BOTTOM_DRAG_BAR_HEIGHT
+            Const.DragBar.Outset + Const.DragBar.Height
         )
 
         ApplyWindowSize(clampedTopLeft, windowWidth)
@@ -6644,14 +6676,14 @@ TrackConnection(RunService.RenderStepped:Connect(function()
     local screenSize = GetScreenSize(ScreenGui)
     local maxWidth = math.min(
         math.max(0, screenSize.X - RuntimeState.dragTopLeft.X),
-        math.max(0, (screenSize.Y - RuntimeState.dragTopLeft.Y) * ASPECT_RATIO)
+        math.max(0, (screenSize.Y - RuntimeState.dragTopLeft.Y) * Const.Window.AspectRatio)
     )
 
     if maxWidth <= 0 then
         return
     end
 
-    local minWidth = math.min(MIN_WINDOW_SIZE.X, maxWidth)
+    local minWidth = math.min(Const.Window.MinSize.X, maxWidth)
     local targetWidth = math.clamp((RuntimeState.pointerPosition.X - RuntimeState.dragTopLeft.X) + RuntimeState.dragWidthOffset, minWidth, maxWidth)
 
     ApplyWindowSize(RuntimeState.dragTopLeft, targetWidth)
@@ -6677,7 +6709,7 @@ function Library:Destroy()
 end
 
 if EXECUTION_STORE then
-    EXECUTION_STORE[EXECUTION_REGISTRY_KEY] = {
+    EXECUTION_STORE[Const.Execution.RegistryKey] = {
         ScreenGui = ScreenGui,
         Destroy = function()
             Library:Destroy()
