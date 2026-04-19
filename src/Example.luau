@@ -158,13 +158,21 @@ end)
 
 RightBox:AddDivider()
 
--- Standalone KeyPicker — pressing End destroys the UI
+-- Standalone KeyPicker — right-click the button to pick Always / Toggle / Hold
+-- Pressing End destroys the UI
 local PanicKey = RightBox:AddKeyPicker("PanicKey", {
     Text    = "Panic Key",
     Default = "End",
-    Mode    = "Always",
+    Mode    = "Toggle",
 })
 PanicKey.Clicked:Connect(function()
     print("Panic — unloading")
     Library:Destroy()
 end)
+
+-- ── Second tab with ViewportBox ───────────────────────────────────────────────
+local Tab2 = Library:AddTab("Preview")
+
+-- ViewportBox — shows an R6 rig coloured with the accent colour.
+-- No children can be added; it's purely visual.
+local CharacterBox = Tab2:AddViewportBox("Character", "Left")

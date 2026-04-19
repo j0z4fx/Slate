@@ -76,7 +76,7 @@ local Const = {
         RowHeight         = 22,
         CornerRadius      = 6,
         AnimTime          = 0.12,
-        DoubleClickWindow = 0.35,
+        DoubleClickWindow = 0.75,
     },
     Slider = {
         RowHeight        = 30,
@@ -182,6 +182,37 @@ local UserInputService = GetService("UserInputService")
 local HttpService      = GetService("HttpService")
 
 local LocalPlayer = Players and Players.LocalPlayer
+
+Library.Icons = nil
+
+task.spawn(function()
+    local ok, result = pcall(function()
+        return loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua"
+        ))()
+    end)
+    if ok and type(result) == "table" then
+        Library.Icons = result
+    end
+end)
+
+function Library:GetIcon(name)
+    if not self.Icons then return nil end
+    return self.Icons[name]
+end
+
+function Library:ApplyIcon(imageLabel, name)
+    local icon = self:GetIcon(name)
+    if not icon then return false end
+    imageLabel.Image = icon.Image or ""
+    if icon.ImageRectOffset then
+        imageLabel.ImageRectOffset = icon.ImageRectOffset
+    end
+    if icon.ImageRectSize then
+        imageLabel.ImageRectSize = icon.ImageRectSize
+    end
+    return true
+end
 
 local Connections = {}
 
@@ -2287,6 +2318,18 @@ function Tab:AddGroupBox(name, columnName)
     return groupBox
 end
 
+function Tab:AddViewportBox(name, columnName)
+    local groupBox = GroupBox.new(self, name, columnName, self._nextGroupBoxLayoutOrder)
+    groupBox.IsViewport = true
+    self._nextGroupBoxLayoutOrder = self._nextGroupBoxLayoutOrder + 1
+
+    table.insert(self.GroupBoxes, groupBox)
+    RegisterComponent(groupBox)
+    self.RenderHook:Fire("GroupBoxAdded", groupBox)
+
+    return groupBox
+end
+
 function Tab:Destroy()
     if self._destroyed then
         return
@@ -3010,23 +3053,74 @@ function Renderer:MountGroupBox(groupBox)
 
     local controlArea = Instance.new("Frame")
     controlArea.Name = "gbControlArea"
-    controlArea.Size = UDim2.new(1, 0, 0, Const.GroupBox.Padding * 2)
-    controlArea.AutomaticSize = Enum.AutomaticSize.Y
     controlArea.BackgroundTransparency = 1
     controlArea.BorderSizePixel = 0
     controlArea.Parent = bodyContainer
 
-    local controlPadding = Instance.new("UIPadding")
-    controlPadding.PaddingLeft = UDim.new(0, Const.GroupBox.Padding)
-    controlPadding.PaddingRight = UDim.new(0, Const.GroupBox.Padding)
-    controlPadding.PaddingTop = UDim.new(0, Const.GroupBox.Padding)
-    controlPadding.PaddingBottom = UDim.new(0, Const.GroupBox.Padding)
-    controlPadding.Parent = controlArea
+    if groupBox.IsViewport then
+        local vpHeight = 160
+        controlArea.Size = UDim2.new(1, 0, 0, vpHeight)
+        controlArea.AutomaticSize = Enum.AutomaticSize.None
 
-    local controlLayout = Instance.new("UIListLayout")
-    controlLayout.Padding = UDim.new(0, Const.GroupBox.ChildPadding)
-    controlLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    controlLayout.Parent = controlArea
+        local viewport = Instance.new("ViewportFrame")
+        viewport.Name = "Viewport"
+        viewport.Size = UDim2.fromScale(1, 1)
+        viewport.BackgroundTransparency = 1
+        viewport.BackgroundColor3 = Color3.new(0, 0, 0)
+        viewport.BorderSizePixel = 0
+        viewport.LightColor = Color3.new(1, 1, 1)
+        viewport.LightDirection = Vector3.new(-1, -2, -1)
+        viewport.Ambient = Color3.fromRGB(120, 120, 120)
+        viewport.Parent = controlArea
+
+        local worldModel = Instance.new("WorldModel")
+        worldModel.Parent = viewport
+
+        local accent = Library.Theme.Status.Accent
+
+        local function makePart(name, size, pos)
+            local p = Instance.new("Part")
+            p.Name = name
+            p.Size = size
+            p.CFrame = CFrame.new(pos)
+            p.Anchored = true
+            p.Color = accent
+            p.Material = Enum.Material.SmoothPlastic
+            p.CastShadow = false
+            p.TopSurface = Enum.SurfaceType.Smooth
+            p.BottomSurface = Enum.SurfaceType.Smooth
+            p.Parent = worldModel
+            return p
+        end
+
+        makePart("Torso",     Vector3.new(2, 2, 1),   Vector3.new(0,  0,   0))
+        makePart("Head",      Vector3.new(2, 1, 1),   Vector3.new(0,  1.5, 0))
+        makePart("Left Arm",  Vector3.new(1, 2, 1),   Vector3.new(-1.5, 0, 0))
+        makePart("Right Arm", Vector3.new(1, 2, 1),   Vector3.new( 1.5, 0, 0))
+        makePart("Left Leg",  Vector3.new(1, 2, 1),   Vector3.new(-0.5, -2, 0))
+        makePart("Right Leg", Vector3.new(1, 2, 1),   Vector3.new( 0.5, -2, 0))
+
+        local cam = Instance.new("Camera")
+        cam.CFrame = CFrame.lookAt(Vector3.new(-3, 3.5, 7), Vector3.new(0, 0.5, 0))
+        cam.FieldOfView = 35
+        cam.Parent = viewport
+        viewport.CurrentCamera = cam
+    else
+        controlArea.Size = UDim2.new(1, 0, 0, Const.GroupBox.Padding * 2)
+        controlArea.AutomaticSize = Enum.AutomaticSize.Y
+
+        local controlPadding = Instance.new("UIPadding")
+        controlPadding.PaddingLeft = UDim.new(0, Const.GroupBox.Padding)
+        controlPadding.PaddingRight = UDim.new(0, Const.GroupBox.Padding)
+        controlPadding.PaddingTop = UDim.new(0, Const.GroupBox.Padding)
+        controlPadding.PaddingBottom = UDim.new(0, Const.GroupBox.Padding)
+        controlPadding.Parent = controlArea
+
+        local controlLayout = Instance.new("UIListLayout")
+        controlLayout.Padding = UDim.new(0, Const.GroupBox.ChildPadding)
+        controlLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        controlLayout.Parent = controlArea
+    end
 
     self.GroupBoxes[groupBox] = {
         Root = root,
@@ -3041,7 +3135,9 @@ function Renderer:MountGroupBox(groupBox)
 
     TrackConnection(groupBox.RenderHook:Connect(function(action, payload)
         if action == "ChildAdded" then
-            self:MountControl(groupBox, payload)
+            if not groupBox.IsViewport then
+                self:MountControl(groupBox, payload)
+            end
             return
         end
 
@@ -3753,11 +3849,18 @@ Library:RegisterControlRenderer("Button", function(control)
                 applyVisual(false)
             elseif action == "Clicked" then
                 cancelTweens()
-                pill.BackgroundColor3 = Library.Theme.Surface.S4
-                pill.BackgroundTransparency = 0
-                tweenProperty(pill, Const.Button.AnimTime * 2.5, {
+                local clickColor = control.Risky and Library.Theme.Status.Error or Library.Theme.Status.Accent
+                pill.BackgroundColor3 = clickColor
+                pill.BackgroundTransparency = 0.85
+                pillStroke.Color = clickColor
+                pillStroke.Transparency = 0.1
+                tweenProperty(pill, Const.Button.AnimTime * 3, {
                     BackgroundColor3 = hovered and Library.Theme.Surface.S3 or Library.Theme.Surface.S2,
                     BackgroundTransparency = 0,
+                })
+                tweenProperty(pillStroke, Const.Button.AnimTime * 3, {
+                    Color = control.Risky and Library.Theme.Status.Error or Library.Theme.Surface.S5,
+                    Transparency = 0.5,
                 })
             end
         end,
@@ -3923,12 +4026,15 @@ Library:RegisterControlRenderer("Slider", function(control)
         local percent = range > 0 and (value - control.Min) / range or 0
         local targetPos = UDim2.new(percent, 0, 0.5, 0)
         local targetFill = UDim2.new(percent, 0, 1, 0)
-        if instant then
+        -- Use a fast lerp during drag so the thumb trails slightly behind the
+        -- cursor (feels smooth), and the full AnimTime when driven by SetValue.
+        local t = instant and 0 or (dragging and 0.06 or Const.Slider.AnimTime)
+        if t <= 0 then
             thumb.Position = targetPos
             trackFill.Size = targetFill
         else
-            tweenProperty(thumb, Const.Slider.AnimTime, {Position = targetPos})
-            tweenProperty(trackFill, Const.Slider.AnimTime, {Size = targetFill})
+            tweenProperty(thumb, t, {Position = targetPos})
+            tweenProperty(trackFill, t, {Size = targetFill})
         end
     end
 
@@ -4035,7 +4141,7 @@ Library:RegisterControlRenderer("Slider", function(control)
             if action == "ValueChanged" then
                 cancelTweens()
                 valueLabel.Text = control:_FormatValue()
-                applyThumb(control.Value, dragging)
+                applyThumb(control.Value, false)
             elseif action == "VisualStateChanged" then
                 applyVisual(false)
             end
@@ -4643,10 +4749,10 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
     root.BorderSizePixel = 0
 
     local textLabel
-    local modeButton
     local rail
     local localConnections = {}
     local activeTweens = {}
+    local currentModeMenuClose = nil
 
     local keyButton = Instance.new("TextButton")
     keyButton.Name = "KeyButton"
@@ -4699,6 +4805,138 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
         end
     end
 
+    local function openModeMenu()
+        if control.Disabled or control.SyncToggleState then return end
+        if currentModeMenuClose then currentModeMenuClose() end
+
+        local modes = { "Always", "Toggle", "Hold" }
+        local itemH = 22
+        local pad = 5
+        local gap = 2
+        local menuW = 82
+        local totalH = pad * 2 + #modes * itemH + (#modes - 1) * gap
+
+        local menu = Instance.new("Frame")
+        menu.Name = "KeyPickerModeMenu"
+        menu.BackgroundColor3 = Library.Theme.Surface.S1
+        menu.BorderSizePixel = 0
+        menu.ZIndex = 30
+        menu.ClipsDescendants = false
+        menu.Parent = ScreenGui
+
+        local menuCorner = Instance.new("UICorner")
+        menuCorner.CornerRadius = UDim.new(0, 6)
+        menuCorner.Parent = menu
+
+        local menuStroke = Instance.new("UIStroke")
+        menuStroke.Thickness = 1
+        menuStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        menuStroke.Color = Library.Theme.Surface.S4
+        menuStroke.Transparency = 0.3
+        menuStroke.Parent = menu
+
+        local menuLayout = Instance.new("UIListLayout")
+        menuLayout.FillDirection = Enum.FillDirection.Vertical
+        menuLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        menuLayout.Padding = UDim.new(0, gap)
+        menuLayout.Parent = menu
+
+        local menuPad = Instance.new("UIPadding")
+        menuPad.PaddingTop = UDim.new(0, pad)
+        menuPad.PaddingBottom = UDim.new(0, pad)
+        menuPad.PaddingLeft = UDim.new(0, pad)
+        menuPad.PaddingRight = UDim.new(0, pad)
+        menuPad.Parent = menu
+
+        local screenGuiPos = ScreenGui.AbsolutePosition
+        local btnPos = keyButton.AbsolutePosition - screenGuiPos
+        local btnSize = keyButton.AbsoluteSize
+        local screenSize = GetScreenSize(ScreenGui)
+        local menuX = math.clamp(btnPos.X + btnSize.X - menuW, 4, screenSize.X - menuW - 4)
+        local menuY = btnPos.Y + btnSize.Y + 4
+        if menuY + totalH > screenSize.Y - 4 then
+            menuY = btnPos.Y - totalH - 4
+        end
+        menu.Position = UDim2.fromOffset(menuX, menuY)
+        menu.Size = UDim2.fromOffset(menuW, totalH)
+
+        local menuConns = {}
+
+        local function closeMenu()
+            currentModeMenuClose = nil
+            for _, c in ipairs(menuConns) do
+                if c.Connected then c:Disconnect() end
+            end
+            if menu.Parent then menu:Destroy() end
+        end
+        currentModeMenuClose = closeMenu
+
+        for i, modeName in ipairs(modes) do
+            local isSelected = control.Mode == modeName
+            local item = Instance.new("TextButton")
+            item.Name = modeName
+            item.Size = UDim2.new(1, 0, 0, itemH)
+            item.BackgroundColor3 = Library.Theme.Status.Accent
+            item.BackgroundTransparency = isSelected and 0.85 or 1
+            item.BorderSizePixel = 0
+            item.AutoButtonColor = false
+            item.Text = modeName
+            item.TextColor3 = isSelected and Library.Theme.Text.Primary or Library.Theme.Text.Secondary
+            item.TextSize = 11
+            item.Font = Enum.Font.GothamMedium
+            item.ZIndex = 31
+            item.LayoutOrder = i
+            item.Parent = menu
+
+            local itemCorner = Instance.new("UICorner")
+            itemCorner.CornerRadius = UDim.new(0, 4)
+            itemCorner.Parent = item
+
+            if isSelected then
+                local itemStroke = Instance.new("UIStroke")
+                itemStroke.Thickness = 1
+                itemStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                itemStroke.Color = Library.Theme.Status.Accent
+                itemStroke.Transparency = 0
+                itemStroke.Parent = item
+            end
+
+            table.insert(menuConns, item.MouseEnter:Connect(function()
+                if not isSelected then item.BackgroundTransparency = 0.93 end
+            end))
+            table.insert(menuConns, item.MouseLeave:Connect(function()
+                if not isSelected then item.BackgroundTransparency = 1 end
+            end))
+            table.insert(menuConns, item.MouseButton1Click:Connect(function()
+                control:SetMode(modeName)
+                closeMenu()
+            end))
+        end
+
+        task.defer(function()
+            if not currentModeMenuClose then return end
+            local outsideConn
+            outsideConn = UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType ~= Enum.UserInputType.MouseButton1
+                and input.UserInputType ~= Enum.UserInputType.MouseButton2 then return end
+                if not menu.Parent then
+                    outsideConn:Disconnect()
+                    return
+                end
+                local pos = input.Position
+                local ap = menu.AbsolutePosition
+                local as = menu.AbsoluteSize
+                local inside = pos.X >= ap.X and pos.X <= ap.X + as.X
+                    and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
+                if not inside then
+                    outsideConn:Disconnect()
+                    closeMenu()
+                end
+            end)
+            table.insert(menuConns, outsideConn)
+        end)
+    end
+
     if isAttached then
         root.Size = UDim2.fromOffset(Const.KeyPicker.ButtonMinWidth, buttonHeight)
         keyButton.Parent = root
@@ -4733,28 +4971,7 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
         railLayout.Padding = UDim.new(0, Const.Control.AddonGap)
         railLayout.Parent = rail
 
-        modeButton = Instance.new("TextButton")
-        modeButton.Name = "ModeButton"
-        modeButton.AutoButtonColor = false
-        modeButton.Size = UDim2.fromOffset(Const.KeyPicker.ModeWidth, buttonHeight)
-        modeButton.BackgroundColor3 = Library.Theme.Surface.S2
-        modeButton.BorderSizePixel = 0
-        modeButton.TextSize = 10
-        modeButton.Font = Enum.Font.Gotham
-        modeButton.LayoutOrder = 1
-        modeButton.Parent = rail
-
-        local modeCorner = Instance.new("UICorner")
-        modeCorner.CornerRadius = UDim.new(0, Const.KeyPicker.CornerRadius)
-        modeCorner.Parent = modeButton
-
-        local modeStroke = Instance.new("UIStroke")
-        modeStroke.Name = "Stroke"
-        modeStroke.Thickness = 1
-        modeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        modeStroke.Parent = modeButton
-
-        keyButton.LayoutOrder = 2
+        keyButton.LayoutOrder = 1
         keyButton.Parent = rail
 
         local function updateStandaloneLayout()
@@ -4787,46 +5004,28 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
             })
         end
 
-        local activeColor = isListening and Library.Theme.Status.Info or (isActive and Library.Theme.Status.Accent or Library.Theme.Surface.S3)
+        local bgColor = isListening and Library.Theme.Status.Info or Library.Theme.Surface.S3
+        local bgTransp = isDisabled and 0.3 or (isListening and 0 or (isActive and 0.85 or 0))
         local strokeColor = isListening and Library.Theme.Status.Info or (isActive and Library.Theme.Status.Accent or Library.Theme.Surface.S5)
+        local strokeTransp = isDisabled and 0.7 or (isActive and 0 or 0.45)
+
         tweenProperty(keyButton, duration, {
-            BackgroundColor3 = isDisabled and Library.Theme.Surface.S2 or activeColor,
-            BackgroundTransparency = isDisabled and 0.3 or 0,
+            BackgroundColor3 = isDisabled and Library.Theme.Surface.S2 or bgColor,
+            BackgroundTransparency = bgTransp,
             TextColor3 = isDisabled and Library.Theme.Text.Secondary or Library.Theme.Text.Primary,
             TextTransparency = isDisabled and 0.45 or 0,
         })
         tweenProperty(keyStroke, duration, {
             Color = strokeColor,
-            Transparency = isDisabled and 0.7 or 0.45,
+            Transparency = strokeTransp,
         })
-
-        if modeButton then
-            modeButton.Text = control.Mode
-            local modeStroke = modeButton:FindFirstChild("Stroke")
-            tweenProperty(modeButton, duration, {
-                BackgroundColor3 = isDisabled and Library.Theme.Surface.S1 or Library.Theme.Surface.S2,
-                BackgroundTransparency = isDisabled and 0.3 or 0,
-                TextColor3 = isDisabled and Library.Theme.Text.Tertiary or Library.Theme.Text.Secondary,
-                TextTransparency = isDisabled and 0.45 or 0,
-            })
-            if modeStroke then
-                tweenProperty(modeStroke, duration, {
-                    Color = Library.Theme.Surface.S5,
-                    Transparency = isDisabled and 0.7 or 0.5,
-                })
-            end
-            modeButton.Active = not isDisabled and not control.SyncToggleState
-        end
 
         keyButton.Active = not isDisabled
     end
 
     table.insert(localConnections, keyButton:GetPropertyChangedSignal("TextBounds"):Connect(updateKeyButtonWidth))
     table.insert(localConnections, keyButton.MouseButton1Click:Connect(function()
-        if control.Disabled then
-            return
-        end
-
+        if control.Disabled then return end
         if control._listening then
             control:EndListening()
         else
@@ -4834,20 +5033,9 @@ Library:RegisterControlRenderer("KeyPicker", function(control)
         end
     end))
     table.insert(localConnections, keyButton.MouseButton2Click:Connect(function()
-        if control.Disabled then
-            return
-        end
-        control:CycleMode()
+        if control.Disabled then return end
+        openModeMenu()
     end))
-
-    if modeButton then
-        table.insert(localConnections, modeButton.MouseButton1Click:Connect(function()
-            if control.Disabled then
-                return
-            end
-            control:CycleMode()
-        end))
-    end
 
     local ancestorGroupBox = RendererHelpers.FindAncestorGroupBox(control)
     if ancestorGroupBox then
@@ -6082,11 +6270,11 @@ Library:RegisterControlRenderer("Dropdown", function(control)
         })
         tweenProperty(trigger, duration, {
             BackgroundColor3 = isDisabled and Library.Theme.Surface.S1 or Library.Theme.Surface.S2,
-            BackgroundTransparency = isDisabled and 0.15 or 0,
+            BackgroundTransparency = isDisabled and 0.15 or (opened and 0.85 or 0),
         })
         tweenProperty(triggerStroke, duration, {
             Color = opened and Library.Theme.Status.Accent or Library.Theme.Surface.S4,
-            Transparency = isDisabled and 0.45 or 0.1,
+            Transparency = isDisabled and 0.45 or (opened and 0 or 0.1),
         })
         tweenProperty(valueLabel, duration, {
             TextColor3 = isDisabled and Library.Theme.Text.Tertiary or (isPlaceholder and Library.Theme.Text.Secondary or Library.Theme.Text.Primary),
@@ -6235,6 +6423,7 @@ local function MakeTabButton(parent)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.fromOffset(Const.Sidebar.ButtonSize, Const.Sidebar.ButtonSize)
     btn.BackgroundColor3 = Library.Theme.Surface.S1
+    btn.BackgroundTransparency = 0
     btn.BorderSizePixel = 0
     btn.AutoButtonColor = false
     btn.Text = ""
@@ -6242,13 +6431,28 @@ local function MakeTabButton(parent)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, Const.Sidebar.ButtonCornerRadius)
     corner.Parent = btn
+    local stroke = Instance.new("UIStroke")
+    stroke.Name = "Stroke"
+    stroke.Thickness = 1.5
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Color = Library.Theme.Status.Accent
+    stroke.Transparency = 1
+    stroke.Parent = btn
     return btn
 end
 
 local function SetTabButtonActive(btn, active)
-    TweenService:Create(btn, TweenInfo.new(0.12, Enum.EasingStyle.Quint), {
+    local stroke = btn:FindFirstChild("Stroke")
+    local ti = TweenInfo.new(0.15, Enum.EasingStyle.Quint)
+    TweenService:Create(btn, ti, {
         BackgroundColor3 = active and Library.Theme.Status.Accent or Library.Theme.Surface.S1,
+        BackgroundTransparency = active and 0.85 or 0,
     }):Play()
+    if stroke then
+        TweenService:Create(stroke, ti, {
+            Transparency = active and 0 or 1,
+        }):Play()
+    end
 end
 
 function Library:SwitchTab(targetTab)
@@ -6284,7 +6488,7 @@ function Library:AddTab(name)
     if not self.ActiveTab then
         self.ActiveTab = tab
         self.Tab = tab
-        btn.BackgroundColor3 = Library.Theme.Status.Accent
+        SetTabButtonActive(btn, true)
     else
         -- newly added tabs start invisible until switched to
         for _, groupBox in ipairs(tab.GroupBoxes) do
@@ -6304,6 +6508,10 @@ end
 
 function Library:AddGroupBox(name, columnName)
     return self.ActiveTab:AddGroupBox(name, columnName)
+end
+
+function Library:AddViewportBox(name, columnName)
+    return self.ActiveTab:AddViewportBox(name, columnName)
 end
 
 function Library:ToggleVisibility()
