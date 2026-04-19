@@ -126,9 +126,9 @@ local Const = {
         FadeHeight = 52,
     },
     Sidebar = {
-        ButtonSize         = 40,
+        ButtonSize         = 48,
         ButtonGap          = 4,
-        ButtonCornerRadius = 8,
+        ButtonCornerRadius = 10,
     },
     Execution = {
         RegistryKey  = "__SlateActiveExecution_Library",
@@ -185,14 +185,60 @@ local LocalPlayer = Players and Players.LocalPlayer
 
 Library.Icons = nil
 
+-- Lucide icon loader with on-disk caching.
+-- Source is fetched once and cached under SlateUI_Lucide/, keyed by version.
+-- Falls back to raw HttpGet if exploit sandbox lacks filesystem writes.
 task.spawn(function()
-    local ok, result = pcall(function()
-        return loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua"
-        ))()
+    local VERSION    = "1.0.0"
+    local BASE       = "SlateUI_Lucide"
+    local VERSION_F  = BASE .. "/version.txt"
+    local SOURCE_F   = BASE .. "/source.lua"
+    local SOURCE_URL = "https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua"
+
+    local hasFs = (typeof(isfolder) == "function")
+        and (typeof(makefolder) == "function")
+        and (typeof(isfile) == "function")
+        and (typeof(readfile) == "function")
+        and (typeof(writefile) == "function")
+
+    local source
+    if hasFs then
+        pcall(function()
+            if not isfolder(BASE) then makefolder(BASE) end
+        end)
+
+        local cachedVersion = ""
+        pcall(function()
+            if isfile(VERSION_F) then cachedVersion = readfile(VERSION_F) end
+        end)
+
+        if cachedVersion == VERSION then
+            pcall(function()
+                if isfile(SOURCE_F) then source = readfile(SOURCE_F) end
+            end)
+        end
+
+        if not source then
+            local ok, fetched = pcall(game.HttpGet, game, SOURCE_URL)
+            if ok and type(fetched) == "string" and #fetched > 0 then
+                source = fetched
+                pcall(function() writefile(SOURCE_F, fetched) end)
+                pcall(function() writefile(VERSION_F, VERSION) end)
+            end
+        end
+    else
+        local ok, fetched = pcall(game.HttpGet, game, SOURCE_URL)
+        if ok and type(fetched) == "string" then source = fetched end
+    end
+
+    if not source then return end
+
+    local ok, loaded = pcall(function()
+        local fn = loadstring(source)
+        return fn and fn()
     end)
-    if ok and type(result) == "table" then
-        Library.Icons = result
+    if ok and type(loaded) == "table" then
+        Library.Icons = loaded
     end
 end)
 
@@ -2336,10 +2382,34 @@ function Tab:AddViewportBox(name, columnName)
     return groupBox
 end
 
+function Tab:AddCurveEditorBox(name, columnName, opts)
+    opts = opts or {}
+    local groupBox = GroupBox.new(self, name, columnName, self._nextGroupBoxLayoutOrder)
+    groupBox.IsCurveEditor = true
+    groupBox.Changed = FastSignal.new()
+    groupBox.CurveHeight = tonumber(opts.Height) or 140
+    groupBox.CurvePoints = {
+        { x = 0.0,  y = 0.0  },
+        { x = 0.25, y = 0.1  },
+        { x = 0.5,  y = 0.5  },
+        { x = 0.75, y = 0.9  },
+        { x = 1.0,  y = 1.0  },
+    }
+    if type(opts.Default) == "table" then
+        groupBox.CurvePoints = opts.Default
+    end
+    self._nextGroupBoxLayoutOrder = self._nextGroupBoxLayoutOrder + 1
+    table.insert(self.GroupBoxes, groupBox)
+    RegisterComponent(groupBox)
+    self.RenderHook:Fire("GroupBoxAdded", groupBox)
+    return groupBox
+end
+
 function Tab:AddBodyPartBox(name, columnName)
     local groupBox = GroupBox.new(self, name, columnName, self._nextGroupBoxLayoutOrder)
     groupBox.IsBodyPartPicker = true
     groupBox.Value = "Torso"
+    groupBox.Changed = FastSignal.new()
     self._nextGroupBoxLayoutOrder = self._nextGroupBoxLayoutOrder + 1
 
     table.insert(self.GroupBoxes, groupBox)
@@ -3011,6 +3081,11 @@ function Renderer:MountGroupBox(groupBox)
     root.Size = UDim2.fromScale(1, 0)
     root.AutomaticSize = Enum.AutomaticSize.Y
     root.LayoutOrder = groupBox.LayoutOrder
+    -- Start hidden if this groupbox's tab isn't the active tab; prevents a
+    -- one-frame flash when adding groupboxes to a not-yet-active tab.
+    if Library.ActiveTab ~= nil and groupBox.Tab ~= Library.ActiveTab then
+        root.Visible = false
+    end
     root.Parent = parentColumn
 
     local rootLayout = Instance.new("UIListLayout")
@@ -3190,9 +3265,9 @@ function Renderer:MountGroupBox(groupBox)
         end)
 
     elseif groupBox.IsBodyPartPicker then
-        local pad = 6
-        local gap = 2
-        local unit = 20
+        local pad = 8
+        local gap = 3
+        local unit = 28
 
         local torsoW = unit * 2 + gap
         local headH  = math.floor(unit * 1.25)
@@ -3275,6 +3350,13 @@ function Renderer:MountGroupBox(groupBox)
         local offsetX = 0
         local headW = math.floor(unit * 1.25)
 
+        local function clearButtons()
+            for name, info in pairs(partButtons) do
+                if info.button then info.button:Destroy() end
+                partButtons[name] = nil
+            end
+        end
+
         local function buildLayout(ox)
             local armW    = unit
             local lArmX   = ox
@@ -3285,7 +3367,7 @@ function Renderer:MountGroupBox(groupBox)
             local torsoY  = pad + headH + gap
             local legsY   = torsoY + unit * 2 + gap
             local legW    = math.floor((torsoW - gap) / 2)
-            local hrpSize = math.floor(unit * 0.5)
+            local hrpSize = math.floor(unit * 0.85)
             local hrpX    = torsoX + math.floor((torsoW - hrpSize) / 2)
             local hrpY    = torsoY + math.floor((unit * 2 - hrpSize) / 2)
 
@@ -3318,22 +3400,293 @@ function Renderer:MountGroupBox(groupBox)
                 UDim2.fromOffset(legW, unit * 2), false)
         end
 
-        -- Build layout once the controlArea has size; use defer so AbsoluteSize is populated
-        task.defer(function()
-            if controlArea.Parent then
-                offsetX = math.max(0, math.floor((controlArea.AbsoluteSize.X - figureW) / 2))
-                buildLayout(offsetX)
+        local function rebuild()
+            if not controlArea.Parent then return end
+            local newOffset = math.max(0, math.floor((controlArea.AbsoluteSize.X - figureW) / 2))
+            if newOffset == offsetX and next(partButtons) ~= nil then
+                return
             end
-        end)
+            offsetX = newOffset
+            clearButtons()
+            buildLayout(offsetX)
+        end
+
+        task.defer(rebuild)
+
+        TrackConnection(controlArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(rebuild))
 
         TrackConnection(groupBox.RenderHook:Connect(function(action, payload)
             if action == "SetPart" then
                 if partButtons[payload] then
                     groupBox.Value = payload
                     refreshButtons()
+                    groupBox.Changed:Fire(payload)
                 end
             end
         end))
+
+    elseif groupBox.IsCurveEditor then
+        local padX = Const.GroupBox.Padding
+        local padY = Const.GroupBox.Padding
+        local canvasH = groupBox.CurveHeight or 140
+        local pointRadius = 5
+        local lineThickness = 2
+        local curveSegments = 96
+
+        controlArea.Size = UDim2.new(1, 0, 0, canvasH + padY * 2)
+        controlArea.AutomaticSize = Enum.AutomaticSize.None
+
+        local canvas = Instance.new("Frame")
+        canvas.Name = "CurveCanvas"
+        canvas.BackgroundColor3 = Library.Theme.Surface.S0
+        canvas.BorderSizePixel = 0
+        canvas.Position = UDim2.new(0, padX, 0, padY)
+        canvas.Size = UDim2.new(1, -padX * 2, 0, canvasH)
+        canvas.ClipsDescendants = true
+        canvas.ZIndex = 5
+        canvas.Parent = controlArea
+
+        local canvasCorner = Instance.new("UICorner")
+        canvasCorner.CornerRadius = UDim.new(0, 6)
+        canvasCorner.Parent = canvas
+
+        local canvasStroke = Instance.new("UIStroke")
+        canvasStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        canvasStroke.Color = Library.Theme.Surface.S5
+        canvasStroke.Thickness = 1
+        canvasStroke.Parent = canvas
+
+        -- Grid lines
+        for i = 1, 4 do
+            local t = i / 5
+            local v = Instance.new("Frame")
+            v.BackgroundColor3 = Library.Theme.Surface.S3
+            v.BorderSizePixel = 0
+            v.Position = UDim2.new(t, 0, 0, 0)
+            v.Size = UDim2.new(0, 1, 1, 0)
+            v.ZIndex = 6
+            v.Parent = canvas
+
+            local h = Instance.new("Frame")
+            h.BackgroundColor3 = Library.Theme.Surface.S3
+            h.BorderSizePixel = 0
+            h.Position = UDim2.new(0, 0, t, 0)
+            h.Size = UDim2.new(1, 0, 0, 1)
+            h.ZIndex = 6
+            h.Parent = canvas
+        end
+
+        local curveContainer = Instance.new("Frame")
+        curveContainer.Name = "Curve"
+        curveContainer.BackgroundTransparency = 1
+        curveContainer.Size = UDim2.fromScale(1, 1)
+        curveContainer.ZIndex = 7
+        curveContainer.Parent = canvas
+
+        local points = groupBox.CurvePoints
+        local pointFrames = {}
+        local lineSegments = {}
+        local joinDots = {}
+
+        -- Better line approach than glycerin's: each rotated-rect segment gets
+        -- a round "cap" at its joint so bends look continuous instead of
+        -- showing gaps between rotated rectangles.
+        local function ensureSegment(i)
+            if lineSegments[i] then return lineSegments[i] end
+            local seg = Instance.new("Frame")
+            seg.Name = "Seg" .. i
+            seg.BackgroundColor3 = Library.Theme.Status.Accent
+            seg.BorderSizePixel = 0
+            seg.AnchorPoint = Vector2.new(0, 0.5)
+            seg.ZIndex = 7
+            seg.Parent = curveContainer
+            lineSegments[i] = seg
+            return seg
+        end
+
+        local function ensureDot(i)
+            if joinDots[i] then return joinDots[i] end
+            local dot = Instance.new("Frame")
+            dot.BackgroundColor3 = Library.Theme.Status.Accent
+            dot.BorderSizePixel = 0
+            dot.AnchorPoint = Vector2.new(0.5, 0.5)
+            dot.Size = UDim2.fromOffset(lineThickness, lineThickness)
+            dot.ZIndex = 8
+            dot.Parent = curveContainer
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(1, 0)
+            c.Parent = dot
+            joinDots[i] = dot
+            return dot
+        end
+
+        local function catmullRom(p0, p1, p2, p3, t)
+            local t2 = t * t
+            local t3 = t2 * t
+            return 0.5 * (
+                (2 * p1) +
+                (-p0 + p2) * t +
+                (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+                (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+            )
+        end
+
+        local function canvasSize()
+            local s = canvas.AbsoluteSize
+            return math.max(s.X, 1), math.max(s.Y, 1)
+        end
+
+        local function redraw()
+            table.sort(points, function(a, b) return a.x < b.x end)
+            local w, h = canvasSize()
+            local n = #points
+            local pixels = {}
+            for i = 1, n - 1 do
+                local p0 = points[math.max(i - 1, 1)]
+                local p1 = points[i]
+                local p2 = points[math.min(i + 1, n)]
+                local p3 = points[math.min(i + 2, n)]
+                local segs = math.max(1, math.ceil(curveSegments / (n - 1)))
+                for s = 0, segs - 1 do
+                    local t = s / segs
+                    local cx = catmullRom(p0.x, p1.x, p2.x, p3.x, t)
+                    local cy = catmullRom(p0.y, p1.y, p2.y, p3.y, t)
+                    table.insert(pixels, { x = cx * w, y = (1 - cy) * h })
+                end
+            end
+            local last = points[n]
+            table.insert(pixels, { x = last.x * w, y = (1 - last.y) * h })
+
+            for i = 1, #pixels - 1 do
+                local a = pixels[i]
+                local b = pixels[i + 1]
+                local dx, dy = b.x - a.x, b.y - a.y
+                local length = math.sqrt(dx * dx + dy * dy)
+                local seg = ensureSegment(i)
+                seg.Size = UDim2.fromOffset(math.max(length, 1), lineThickness)
+                seg.Position = UDim2.fromOffset(a.x, a.y)
+                seg.Rotation = math.deg(math.atan2(dy, dx))
+                seg.Visible = true
+
+                local dot = ensureDot(i)
+                dot.Position = UDim2.fromOffset(a.x, a.y)
+            end
+            for i = #pixels, #lineSegments do
+                if lineSegments[i] then lineSegments[i].Visible = false end
+                if joinDots[i] then joinDots[i].Visible = false end
+            end
+
+            for i, pt in ipairs(points) do
+                if pointFrames[i] then
+                    pointFrames[i].Position = UDim2.fromOffset(pt.x * w, (1 - pt.y) * h)
+                end
+            end
+        end
+
+        local dragState = { active = false, index = nil }
+
+        local function createHandle(index)
+            local isEndpoint = (index == 1 or index == #points)
+            local handle = Instance.new("TextButton")
+            handle.Name = "Point" .. index
+            handle.AutoButtonColor = false
+            handle.Text = ""
+            handle.BackgroundColor3 = isEndpoint and Library.Theme.Surface.S5 or Library.Theme.Status.Accent
+            handle.BorderSizePixel = 0
+            handle.AnchorPoint = Vector2.new(0.5, 0.5)
+            handle.Size = UDim2.fromOffset(pointRadius * 2, pointRadius * 2)
+            handle.ZIndex = 9
+            handle.Parent = canvas
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0)
+            corner.Parent = handle
+
+            local stroke = Instance.new("UIStroke")
+            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke.Color = Library.Theme.Text.Primary
+            stroke.Thickness = 1
+            stroke.Transparency = 0.5
+            stroke.Parent = handle
+
+            handle.MouseEnter:Connect(function() stroke.Transparency = 0 end)
+            handle.MouseLeave:Connect(function()
+                if not (dragState.active and dragState.index == index) then
+                    stroke.Transparency = 0.5
+                end
+            end)
+
+            handle.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                    or input.UserInputType == Enum.UserInputType.Touch then
+                    dragState.active = true
+                    dragState.index = index
+                end
+            end)
+
+            pointFrames[index] = handle
+        end
+
+        for i = 1, #points do createHandle(i) end
+
+        TrackConnection(UserInputService.InputChanged:Connect(function(input)
+            if not dragState.active then return end
+            if input.UserInputType ~= Enum.UserInputType.MouseMovement
+                and input.UserInputType ~= Enum.UserInputType.Touch then return end
+            local idx = dragState.index
+            if not idx then return end
+            local pos = canvas.AbsolutePosition
+            local w, h = canvasSize()
+            local relX = (input.Position.X - pos.X) / w
+            local relY = 1 - ((input.Position.Y - pos.Y) / h)
+            relY = math.clamp(relY, 0, 1)
+            if idx == 1 or idx == #points then
+                points[idx].y = relY
+            else
+                points[idx].x = math.clamp(relX, 0.01, 0.99)
+                points[idx].y = relY
+            end
+            redraw()
+            groupBox.Changed:Fire(points)
+        end))
+
+        TrackConnection(UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                dragState.active = false
+                dragState.index = nil
+            end
+        end))
+
+        TrackConnection(canvas:GetPropertyChangedSignal("AbsoluteSize"):Connect(redraw))
+        task.defer(redraw)
+
+        groupBox.GetPoints = function()
+            local out = {}
+            for _, p in ipairs(points) do
+                table.insert(out, { x = p.x, y = p.y })
+            end
+            table.sort(out, function(a, b) return a.x < b.x end)
+            return out
+        end
+
+        groupBox.Evaluate = function(_, t)
+            t = math.clamp(tonumber(t) or 0, 0, 1)
+            table.sort(points, function(a, b) return a.x < b.x end)
+            local n = #points
+            for i = 1, n - 1 do
+                if t <= points[i + 1].x or i == n - 1 then
+                    local p0 = points[math.max(i - 1, 1)]
+                    local p1 = points[i]
+                    local p2 = points[math.min(i + 1, n)]
+                    local p3 = points[math.min(i + 2, n)]
+                    local span = p2.x - p1.x
+                    local st = span > 0 and (t - p1.x) / span or 0
+                    return catmullRom(p0.y, p1.y, p2.y, p3.y, st)
+                end
+            end
+            return points[n] and points[n].y or 0
+        end
 
     else
         controlArea.Size = UDim2.new(1, 0, 0, Const.GroupBox.Padding * 2)
@@ -3366,7 +3719,7 @@ function Renderer:MountGroupBox(groupBox)
 
     TrackConnection(groupBox.RenderHook:Connect(function(action, payload)
         if action == "ChildAdded" then
-            if not groupBox.IsViewport and not groupBox.IsBodyPartPicker then
+            if not groupBox.IsViewport and not groupBox.IsBodyPartPicker and not groupBox.IsCurveEditor then
                 self:MountControl(groupBox, payload)
             end
             return
@@ -5365,6 +5718,16 @@ Library:RegisterControlRenderer("ColorPicker", function(control)
     hexLabel.Visible = not isAttached
     hexLabel.Parent = swatch
 
+    if not isAttached then
+        local function updateHexVisibility()
+            local w = swatch.AbsoluteSize.X
+            -- Hide the hex label when there isn't enough horizontal room for it
+            hexLabel.Visible = w >= 42
+        end
+        task.defer(updateHexVisibility)
+        swatch:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateHexVisibility)
+    end
+
     -- ── Popup ────────────────────────────────────────────────
     local hasAlpha = control.AllowTransparency
     local popupW = Const.ColorPicker.PopupPadding * 2
@@ -6749,10 +7112,41 @@ function Library:AddBodyPartBox(name, columnName)
     return self.ActiveTab:AddBodyPartBox(name, columnName)
 end
 
+function Library:AddCurveEditorBox(name, columnName, opts)
+    return self.ActiveTab:AddCurveEditorBox(name, columnName, opts)
+end
+
+local Lighting = GetService("Lighting")
+local BackgroundBlur
+local BlurTween
+
+local function ApplyBlurState(visible)
+    if not Lighting then return end
+    if not BackgroundBlur or BackgroundBlur.Parent ~= Lighting then
+        BackgroundBlur = Instance.new("BlurEffect")
+        BackgroundBlur.Name = "SlateUI_Blur"
+        BackgroundBlur.Size = 0
+        BackgroundBlur.Parent = Lighting
+    end
+    if BlurTween then BlurTween:Cancel() end
+    BlurTween = TweenService:Create(
+        BackgroundBlur,
+        TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        { Size = visible and 14 or 0 }
+    )
+    BlurTween:Play()
+end
+
 function Library:ToggleVisibility()
     if WindowFrame then
         WindowFrame.Visible = not WindowFrame.Visible
+        ApplyBlurState(WindowFrame.Visible)
     end
+end
+
+-- Turn blur on for the initial visible state
+if WindowFrame and WindowFrame.Visible then
+    ApplyBlurState(true)
 end
 
 local RuntimeState = {
@@ -7265,58 +7659,176 @@ local function HasFilesystem()
         and type(makefolder) == "function"
 end
 
+-- Option keys beginning with underscore are library-internal and skipped by
+-- the default save/load cycle.
+local function IsIgnoredOptionKey(key)
+    return type(key) == "string" and key:sub(1, 1) == "_"
+end
+
+-- Parser maps control Kind → { Save(control) -> data, Load(control, data) }.
+-- Matches Linoria/Obsidian's SaveManager.Parser pattern so each Kind owns its
+-- own serialisation without bloating Save/Load.
+local ConfigParser = {
+    Toggle = {
+        Save = function(c) return { value = c.Value and true or false } end,
+        Load = function(c, d) if type(d.value) == "boolean" then c:SetValue(d.value) end end,
+    },
+    Checkbox = {
+        Save = function(c) return { value = c.Value and true or false } end,
+        Load = function(c, d) if type(d.value) == "boolean" then c:SetValue(d.value) end end,
+    },
+    Slider = {
+        Save = function(c) return { value = tonumber(c.Value) } end,
+        Load = function(c, d) if tonumber(d.value) then c:SetValue(tonumber(d.value)) end end,
+    },
+    RangeSlider = {
+        Save = function(c)
+            local v = c.Value or {}
+            return { min = tonumber(v.min or v.Min), max = tonumber(v.max or v.Max) }
+        end,
+        Load = function(c, d)
+            if tonumber(d.min) and tonumber(d.max) then
+                c:SetValue({ min = tonumber(d.min), max = tonumber(d.max) })
+            end
+        end,
+    },
+    Dropdown = {
+        Save = function(c)
+            if type(c.Value) == "table" then
+                local copy = {}
+                for k, v in pairs(c.Value) do copy[k] = v end
+                return { multi = true, value = copy }
+            end
+            return { multi = false, value = c.Value }
+        end,
+        Load = function(c, d) pcall(function() c:SetValue(d.value) end) end,
+    },
+    Input = {
+        Save = function(c) return { value = tostring(c.Value or "") } end,
+        Load = function(c, d) if type(d.value) == "string" then c:SetValue(d.value) end end,
+    },
+    ColorPicker = {
+        Save = function(c)
+            local v = c.Value
+            if typeof(v) == "Color3" then
+                return { hex = v:ToHex() }
+            end
+            return { hex = "ffffff" }
+        end,
+        Load = function(c, d)
+            if type(d.hex) == "string" then
+                local ok, color = pcall(Color3.fromHex, d.hex)
+                if ok then c:SetValue(color) end
+            end
+        end,
+    },
+    KeyPicker = {
+        Save = function(c)
+            return { key = tostring(c.Value or "None"), mode = tostring(c.Mode or "Toggle") }
+        end,
+        Load = function(c, d)
+            if type(d.key) == "string" then
+                pcall(function() c:SetValue({ d.key, d.mode or c.Mode }) end)
+            end
+        end,
+    },
+}
+
+Library.Config = {
+    Folder = CONFIG_FOLDER,
+    Extension = CONFIG_EXT,
+    Parser = ConfigParser,
+    Ignore = {},
+}
+
+function Library:IgnoreConfig(optionKey)
+    Library.Config.Ignore[optionKey] = true
+end
+
 function Library:SaveConfig(name)
-    if not HasFilesystem() or not HttpService then return end
+    if not HasFilesystem() or not HttpService then return false, "no filesystem" end
     if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
-    local data = {}
-    for key, component in pairs(Library.Registry.Named.Toggles) do
-        data[key] = component.Value
-    end
+
+    local objects = {}
     for key, component in pairs(Library.Registry.Named.Options) do
-        local v = component.Value
-        if typeof(v) == "Color3" then
-            data[key] = { _t = "Color3", r = v.R, g = v.G, b = v.B }
-        elseif typeof(v) == "EnumItem" then
-            data[key] = { _t = "Enum", v = tostring(v) }
-        elseif typeof(v) == "table" then
-            data[key] = v
-        else
-            data[key] = v
+        if not Library.Config.Ignore[key] and not IsIgnoredOptionKey(key) then
+            local parser = ConfigParser[component.Kind]
+            if parser then
+                local ok, payload = pcall(parser.Save, component)
+                if ok and type(payload) == "table" then
+                    payload.key = key
+                    payload.kind = component.Kind
+                    table.insert(objects, payload)
+                end
+            end
         end
     end
-    local ok, encoded = pcall(function() return HttpService:JSONEncode(data) end)
-    if ok then
-        writefile(CONFIG_FOLDER .. "/" .. tostring(name) .. CONFIG_EXT, encoded)
-    end
+
+    local ok, encoded = pcall(function()
+        return HttpService:JSONEncode({ version = 1, objects = objects })
+    end)
+    if not ok then return false, "encode failed" end
+
+    local path = CONFIG_FOLDER .. "/" .. tostring(name) .. CONFIG_EXT
+    local writeOk = pcall(writefile, path, encoded)
+    return writeOk, writeOk and path or "write failed"
 end
 
 function Library:LoadConfig(name)
-    if not HasFilesystem() or not HttpService then return end
+    if not HasFilesystem() or not HttpService then return false, "no filesystem" end
     local path = CONFIG_FOLDER .. "/" .. tostring(name) .. CONFIG_EXT
-    if not isfile(path) then return end
+    if not isfile(path) then return false, "not found" end
+
     local raw = readfile(path)
     local ok, data = pcall(function() return HttpService:JSONDecode(raw) end)
-    if not ok or type(data) ~= "table" then return end
-    for key, value in pairs(data) do
-        local toggle = Library.Toggles[key]
-        if toggle then
-            pcall(function() toggle:SetValue(value) end)
-            continue
-        end
-        local option = Library.Options[key]
-        if option then
-            pcall(function()
-                if type(value) == "table" and value._t == "Color3" then
-                    option:SetValue(Color3.new(value.r, value.g, value.b))
-                elseif type(value) == "table" and value._t == "Enum" then
-                    -- KeyPicker / EnumItem — pass the string, control validates
-                    option:SetValue(value.v)
-                else
-                    option:SetValue(value)
-                end
-            end)
+    if not ok or type(data) ~= "table" then return false, "decode failed" end
+
+    -- Support both new-format ({ objects = {...} }) and legacy flat k/v dumps.
+    local objects = data.objects
+    if type(objects) ~= "table" then
+        objects = {}
+        for key, value in pairs(data) do
+            table.insert(objects, { key = key, value = value, kind = "Toggle" })
         end
     end
+
+    task.spawn(function()
+        for _, entry in ipairs(objects) do
+            if type(entry) == "table" and entry.key then
+                local component = Library.Registry.Named.Options[entry.key]
+                if component and not Library.Config.Ignore[entry.key] then
+                    local parser = ConfigParser[component.Kind]
+                    if parser then
+                        pcall(parser.Load, component, entry)
+                    end
+                end
+            end
+        end
+    end)
+
+    return true, path
+end
+
+function Library:ListConfigs()
+    local list = {}
+    if not HasFilesystem() or type(listfiles) ~= "function" then return list end
+    if not isfolder(CONFIG_FOLDER) then return list end
+    for _, path in ipairs(listfiles(CONFIG_FOLDER)) do
+        local file = path:match("([^/\\]+)$") or path
+        local base = file:gsub(CONFIG_EXT .. "$", "")
+        if base ~= "" and base ~= file then
+            table.insert(list, base)
+        end
+    end
+    return list
+end
+
+function Library:DeleteConfig(name)
+    if not HasFilesystem() or type(delfile) ~= "function" then return false end
+    local path = CONFIG_FOLDER .. "/" .. tostring(name) .. CONFIG_EXT
+    if not isfile(path) then return false end
+    local ok = pcall(delfile, path)
+    return ok
 end
 
 function Library:Destroy()
@@ -7327,6 +7839,11 @@ function Library:Destroy()
     self._destroyed = true
     UnregisterCurrentExecution()
     RuntimeHelpers.Cleanup()
+
+    if BackgroundBlur then
+        BackgroundBlur:Destroy()
+        BackgroundBlur = nil
+    end
 
     if ScreenGui.Parent then
         ScreenGui:Destroy()

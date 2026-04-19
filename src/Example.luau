@@ -184,3 +184,14 @@ local PartPicker = Tab2:AddBodyPartBox("Target Part", "Right")
 PartPicker.Changed:Connect(function(part)
     print("Selected part:", part)
 end)
+
+-- ── CurveEditor ──────────────────────────────────────────────────────────────
+-- Draggable Catmull-Rom curve. Endpoints lock their X; interior points slide.
+-- :Evaluate(t) samples the curve. :GetPoints() returns the current control
+-- points sorted by X.
+local Curve = Tab2:AddCurveEditorBox("Response Curve", "Right", {
+    Height = 160,
+})
+Curve.Changed:Connect(function(points)
+    print(("Curve updated with %d points"):format(#points))
+end)
