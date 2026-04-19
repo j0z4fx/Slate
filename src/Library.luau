@@ -7120,8 +7120,48 @@ local Lighting = GetService("Lighting")
 local BackgroundBlur
 local BlurTween
 
+-- Clear any stale blur from a previous execution of this script.
+if Lighting then
+    for _, child in ipairs(Lighting:GetChildren()) do
+        if child.Name == "SlateUI_Blur" then
+            child:Destroy()
+        end
+    end
+end
+
+local function DestroyBlur()
+    if BlurTween then
+        BlurTween:Cancel()
+        BlurTween = nil
+    end
+    if BackgroundBlur then
+        BackgroundBlur:Destroy()
+        BackgroundBlur = nil
+    end
+end
+
 local function ApplyBlurState(visible)
     if not Lighting then return end
+    if not visible then
+        -- Menu hidden: tween down then destroy so no BlurEffect lingers.
+        if not BackgroundBlur then return end
+        if BlurTween then BlurTween:Cancel() end
+        local blur = BackgroundBlur
+        BlurTween = TweenService:Create(
+            blur,
+            TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { Size = 0 }
+        )
+        BlurTween:Play()
+        BlurTween.Completed:Connect(function()
+            if blur and blur.Parent and blur.Size <= 0.05 then
+                blur:Destroy()
+                if BackgroundBlur == blur then BackgroundBlur = nil end
+            end
+        end)
+        return
+    end
+
     if not BackgroundBlur or BackgroundBlur.Parent ~= Lighting then
         BackgroundBlur = Instance.new("BlurEffect")
         BackgroundBlur.Name = "SlateUI_Blur"
@@ -7132,7 +7172,7 @@ local function ApplyBlurState(visible)
     BlurTween = TweenService:Create(
         BackgroundBlur,
         TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        { Size = visible and 14 or 0 }
+        { Size = 14 }
     )
     BlurTween:Play()
 end
@@ -7646,6 +7686,7 @@ end))
 TrackConnection(ScreenGui.Destroying:Connect(function()
     UnregisterCurrentExecution()
     RuntimeHelpers.Cleanup()
+    DestroyBlur()
 end))
 
 local CONFIG_FOLDER = "Slate"
@@ -7840,10 +7881,7 @@ function Library:Destroy()
     UnregisterCurrentExecution()
     RuntimeHelpers.Cleanup()
 
-    if BackgroundBlur then
-        BackgroundBlur:Destroy()
-        BackgroundBlur = nil
-    end
+    DestroyBlur()
 
     if ScreenGui.Parent then
         ScreenGui:Destroy()
