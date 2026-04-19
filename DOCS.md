@@ -52,6 +52,32 @@ Box:SetPlacement("Right", 2)  -- move to a column at a specific layout order
 Box:Destroy()
 ```
 
+### ViewportBox
+
+A fixed-height GroupBox containing a proper R6 rig (HumanoidRootPart, Motor6D joints, Humanoid) slowly rotating, coloured with the accent colour. No child controls.
+
+```lua
+local vp = Tab:AddViewportBox(name: string, column?: string)
+-- also: Library:AddViewportBox(name, column)
+```
+
+### BodyPartBox
+
+A clickable 2D R6 body-part silhouette. Clicking a region selects that part.
+
+```lua
+local bp = Tab:AddBodyPartBox(name: string, column?: string)
+-- also: Library:AddBodyPartBox(name, column)
+```
+
+| API | Description |
+|-----|-------------|
+| `bp.Value` | Currently selected part name (default `"Torso"`) |
+| `bp.Changed` | Signal — fires with the new part name on selection change |
+| `bp:SetPart(name)` | Programmatically select a part |
+
+Part names: `"Head"`, `"Torso"`, `"Left Arm"`, `"Right Arm"`, `"Left Leg"`, `"Right Leg"`, `"HumanoidRootPart"`
+
 ---
 
 ## Controls

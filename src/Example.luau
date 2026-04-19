@@ -170,9 +170,17 @@ PanicKey.Clicked:Connect(function()
     Library:Destroy()
 end)
 
--- ── Second tab with ViewportBox ───────────────────────────────────────────────
+-- ── Second tab with ViewportBox and BodyPartBox ───────────────────────────────
 local Tab2 = Library:AddTab("Preview")
 
--- ViewportBox — shows an R6 rig coloured with the accent colour.
--- No children can be added; it's purely visual.
+-- ViewportBox — proper R6 rig with Motor6D joints, slowly rotating.
+-- Coloured with the accent colour. No children, purely visual.
 local CharacterBox = Tab2:AddViewportBox("Character", "Left")
+
+-- BodyPartBox — clickable 2D body-part silhouette.
+-- .Value holds the currently selected part name.
+-- .Changed fires when the selection changes.
+local PartPicker = Tab2:AddBodyPartBox("Target Part", "Right")
+PartPicker.Changed:Connect(function(part)
+    print("Selected part:", part)
+end)

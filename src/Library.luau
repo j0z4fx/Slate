@@ -2277,6 +2277,12 @@ function GroupBox:SetPlacement(columnName, layoutOrder)
     })
 end
 
+function GroupBox:SetPart(name)
+    if self.IsBodyPartPicker then
+        self.RenderHook:Fire("SetPart", name)
+    end
+end
+
 function GroupBox:Destroy()
     if self._destroyed then
         return
@@ -2321,6 +2327,19 @@ end
 function Tab:AddViewportBox(name, columnName)
     local groupBox = GroupBox.new(self, name, columnName, self._nextGroupBoxLayoutOrder)
     groupBox.IsViewport = true
+    self._nextGroupBoxLayoutOrder = self._nextGroupBoxLayoutOrder + 1
+
+    table.insert(self.GroupBoxes, groupBox)
+    RegisterComponent(groupBox)
+    self.RenderHook:Fire("GroupBoxAdded", groupBox)
+
+    return groupBox
+end
+
+function Tab:AddBodyPartBox(name, columnName)
+    local groupBox = GroupBox.new(self, name, columnName, self._nextGroupBoxLayoutOrder)
+    groupBox.IsBodyPartPicker = true
+    groupBox.Value = "Torso"
     self._nextGroupBoxLayoutOrder = self._nextGroupBoxLayoutOrder + 1
 
     table.insert(self.GroupBoxes, groupBox)
@@ -2805,6 +2824,10 @@ function RendererHelpers.DestroyGroupBoxView(groupBox)
         state.TitleMaskTween:Cancel()
     end
 
+    if state.RotationConnection then
+        state.RotationConnection:Disconnect()
+    end
+
     SafeDestroy(state.TitleBar)
     SafeDestroy(state.BodyContainer)
     SafeDestroy(state.Root)
@@ -3057,8 +3080,11 @@ function Renderer:MountGroupBox(groupBox)
     controlArea.BorderSizePixel = 0
     controlArea.Parent = bodyContainer
 
+    local rotationConn = nil
+    local partChangedSignal = nil
+
     if groupBox.IsViewport then
-        local vpHeight = 160
+        local vpHeight = 192  -- 160 * 1.2
         controlArea.Size = UDim2.new(1, 0, 0, vpHeight)
         controlArea.AutomaticSize = Enum.AutomaticSize.None
 
@@ -3066,45 +3092,249 @@ function Renderer:MountGroupBox(groupBox)
         viewport.Name = "Viewport"
         viewport.Size = UDim2.fromScale(1, 1)
         viewport.BackgroundTransparency = 1
-        viewport.BackgroundColor3 = Color3.new(0, 0, 0)
-        viewport.BorderSizePixel = 0
-        viewport.LightColor = Color3.new(1, 1, 1)
-        viewport.LightDirection = Vector3.new(-1, -2, -1)
         viewport.Ambient = Color3.fromRGB(120, 120, 120)
+        viewport.LightColor = Color3.fromRGB(200, 200, 200)
+        viewport.LightDirection = Vector3.new(-1, -1, -1)
+        viewport.ZIndex = 3
         viewport.Parent = controlArea
 
         local worldModel = Instance.new("WorldModel")
         worldModel.Parent = viewport
 
         local accent = Library.Theme.Status.Accent
+        local model = Instance.new("Model")
+        model.Name = "Rig"
 
-        local function makePart(name, size, pos)
-            local p = Instance.new("Part")
-            p.Name = name
-            p.Size = size
-            p.CFrame = CFrame.new(pos)
-            p.Anchored = true
-            p.Color = accent
-            p.Material = Enum.Material.SmoothPlastic
-            p.CastShadow = false
-            p.TopSurface = Enum.SurfaceType.Smooth
-            p.BottomSurface = Enum.SurfaceType.Smooth
-            p.Parent = worldModel
-            return p
+        local function makeR6Part(name, size, cf, transparency)
+            local part = Instance.new("Part")
+            part.Name = name
+            part.Anchored = true
+            part.CanCollide = false
+            part.Size = size
+            part.CFrame = cf
+            part.Color = accent
+            part.Material = Enum.Material.SmoothPlastic
+            part.Transparency = transparency or 0
+            part.TopSurface = Enum.SurfaceType.Smooth
+            part.BottomSurface = Enum.SurfaceType.Smooth
+            part.Parent = model
+            return part
         end
 
-        makePart("Torso",     Vector3.new(2, 2, 1),   Vector3.new(0,  0,   0))
-        makePart("Head",      Vector3.new(2, 1, 1),   Vector3.new(0,  1.5, 0))
-        makePart("Left Arm",  Vector3.new(1, 2, 1),   Vector3.new(-1.5, 0, 0))
-        makePart("Right Arm", Vector3.new(1, 2, 1),   Vector3.new( 1.5, 0, 0))
-        makePart("Left Leg",  Vector3.new(1, 2, 1),   Vector3.new(-0.5, -2, 0))
-        makePart("Right Leg", Vector3.new(1, 2, 1),   Vector3.new( 0.5, -2, 0))
+        local humanoidRootPart = makeR6Part("HumanoidRootPart", Vector3.new(2, 2, 1), CFrame.new(0, 3, 0), 1)
+        local torso            = makeR6Part("Torso",            Vector3.new(2, 2, 1), CFrame.new(0, 3, 0))
+        local head             = makeR6Part("Head",             Vector3.new(2, 1, 1), CFrame.new(0, 4.5, 0))
+        local leftArm          = makeR6Part("Left Arm",         Vector3.new(1, 2, 1), CFrame.new(-1.5, 3, 0))
+        local rightArm         = makeR6Part("Right Arm",        Vector3.new(1, 2, 1), CFrame.new(1.5, 3, 0))
+        local leftLeg          = makeR6Part("Left Leg",         Vector3.new(1, 2, 1), CFrame.new(-0.5, 1, 0))
+        local rightLeg         = makeR6Part("Right Leg",        Vector3.new(1, 2, 1), CFrame.new(0.5, 1, 0))
+
+        local headMesh = Instance.new("SpecialMesh")
+        headMesh.MeshType = Enum.MeshType.Head
+        headMesh.Scale = Vector3.new(1.25, 1.25, 1.25)
+        headMesh.Parent = head
+
+        local function makeMotor(name, parent, part0, part1, c0, c1)
+            local motor = Instance.new("Motor6D")
+            motor.Name = name
+            motor.Part0 = part0
+            motor.Part1 = part1
+            motor.C0 = c0
+            motor.C1 = c1
+            motor.Parent = parent
+        end
+
+        makeMotor("RootJoint", humanoidRootPart, humanoidRootPart, torso,
+            CFrame.new(0, 0, 0) * CFrame.Angles(-math.pi / 2, 0, math.pi),
+            CFrame.new(0, 0, 0) * CFrame.Angles(-math.pi / 2, 0, math.pi))
+
+        makeMotor("Neck", torso, torso, head,
+            CFrame.new(0, 1, 0) * CFrame.Angles(-math.pi / 2, 0, math.pi),
+            CFrame.new(0, -0.5, 0) * CFrame.Angles(-math.pi / 2, 0, math.pi))
+
+        makeMotor("Left Shoulder", torso, torso, leftArm,
+            CFrame.new(-1, 0.5, 0) * CFrame.Angles(0, -math.pi / 2, 0),
+            CFrame.new(0.5, 0.5, 0) * CFrame.Angles(0, -math.pi / 2, 0))
+
+        makeMotor("Right Shoulder", torso, torso, rightArm,
+            CFrame.new(1, 0.5, 0) * CFrame.Angles(0, math.pi / 2, 0),
+            CFrame.new(-0.5, 0.5, 0) * CFrame.Angles(0, math.pi / 2, 0))
+
+        makeMotor("Left Hip", torso, torso, leftLeg,
+            CFrame.new(-1, -1, 0) * CFrame.Angles(0, -math.pi / 2, 0),
+            CFrame.new(-0.5, 1, 0) * CFrame.Angles(0, -math.pi / 2, 0))
+
+        makeMotor("Right Hip", torso, torso, rightLeg,
+            CFrame.new(1, -1, 0) * CFrame.Angles(0, math.pi / 2, 0),
+            CFrame.new(0.5, 1, 0) * CFrame.Angles(0, math.pi / 2, 0))
+
+        local humanoid = Instance.new("Humanoid")
+        humanoid.RigType = Enum.HumanoidRigType.R6
+        humanoid.Parent = model
+
+        model.PrimaryPart = humanoidRootPart
+        model.Parent = worldModel
 
         local cam = Instance.new("Camera")
-        cam.CFrame = CFrame.lookAt(Vector3.new(-3, 3.5, 7), Vector3.new(0, 0.5, 0))
-        cam.FieldOfView = 35
+        cam.FieldOfView = 40
+        cam.CFrame = CFrame.new(Vector3.new(0, 3, 10), Vector3.new(0, 2.5, 0))
         cam.Parent = viewport
         viewport.CurrentCamera = cam
+
+        local rotAngle = 0
+        rotationConn = RunService.RenderStepped:Connect(function(dt)
+            rotAngle = rotAngle + 0.4 * dt
+            if model.PrimaryPart then
+                model:PivotTo(CFrame.new(0, 3, 0) * CFrame.Angles(0, rotAngle, 0))
+            end
+        end)
+
+    elseif groupBox.IsBodyPartPicker then
+        local pad = 6
+        local gap = 2
+        local unit = 20
+
+        local torsoW = unit * 2 + gap
+        local headH  = math.floor(unit * 1.25)
+        local totalH = headH + gap + unit * 2 + gap + unit * 2
+        local gridH  = totalH + pad * 2
+        local figureW = unit + gap + torsoW + gap + unit
+
+        controlArea.Size = UDim2.new(1, 0, 0, gridH)
+        controlArea.AutomaticSize = Enum.AutomaticSize.None
+
+        groupBox.Value = "Torso"
+        local partButtons = {}
+        local accent = Library.Theme.Status.Accent
+        local tweenInfo = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+        local function refreshButtons()
+            for name, info in pairs(partButtons) do
+                local isActive = (name == groupBox.Value)
+                TweenService:Create(info.fill, tweenInfo, {
+                    BackgroundColor3 = isActive and accent or Library.Theme.Surface.S4,
+                }):Play()
+            end
+        end
+
+        local function createPartButton(name, pos, size, hasStroke)
+            local btn = Instance.new("TextButton")
+            btn.Name = name:gsub("%s+", "") .. "Button"
+            btn.AutoButtonColor = false
+            btn.Text = ""
+            btn.BackgroundTransparency = 1
+            btn.BorderSizePixel = 0
+            btn.Position = pos
+            btn.Size = size
+            btn.ZIndex = 5
+            btn.Parent = controlArea
+
+            local fill = Instance.new("Frame")
+            fill.Name = "Fill"
+            fill.BackgroundColor3 = (name == groupBox.Value) and accent or Library.Theme.Surface.S4
+            fill.BorderSizePixel = 0
+            fill.Size = UDim2.fromScale(1, 1)
+            fill.ZIndex = 4
+            fill.Parent = btn
+
+            local fillCorner = Instance.new("UICorner")
+            fillCorner.CornerRadius = UDim.new(0, 3)
+            fillCorner.Parent = fill
+
+            if hasStroke then
+                local stroke = Instance.new("UIStroke")
+                stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                stroke.Color = Library.Theme.Surface.S5
+                stroke.Thickness = 2
+                stroke.Parent = fill
+            end
+
+            local hoverStroke = Instance.new("UIStroke")
+            hoverStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            hoverStroke.Color = accent
+            hoverStroke.Thickness = 2
+            hoverStroke.Transparency = 1
+            hoverStroke.Parent = fill
+
+            btn.MouseEnter:Connect(function() hoverStroke.Transparency = 0 end)
+            btn.MouseLeave:Connect(function() hoverStroke.Transparency = 1 end)
+            btn.MouseButton1Click:Connect(function()
+                groupBox.Value = name
+                refreshButtons()
+                groupBox.Changed:Fire(name)
+            end)
+
+            partButtons[name] = { button = btn, fill = fill }
+            return btn
+        end
+
+        local function centeredX()
+            return math.floor((controlArea.AbsoluteSize.X - figureW) / 2)
+        end
+
+        local offsetX = 0
+        local headW = math.floor(unit * 1.25)
+
+        local function buildLayout(ox)
+            local armW    = unit
+            local lArmX   = ox
+            local torsoX  = ox + armW + gap
+            local rArmX   = torsoX + torsoW + gap
+            local headX   = torsoX + math.floor((torsoW - headW) / 2)
+            local headY   = pad
+            local torsoY  = pad + headH + gap
+            local legsY   = torsoY + unit * 2 + gap
+            local legW    = math.floor((torsoW - gap) / 2)
+            local hrpSize = math.floor(unit * 0.5)
+            local hrpX    = torsoX + math.floor((torsoW - hrpSize) / 2)
+            local hrpY    = torsoY + math.floor((unit * 2 - hrpSize) / 2)
+
+            createPartButton("Head",
+                UDim2.fromOffset(headX, headY),
+                UDim2.fromOffset(headW, headH), false)
+
+            createPartButton("Left Arm",
+                UDim2.fromOffset(lArmX, torsoY),
+                UDim2.fromOffset(armW, unit * 2), false)
+
+            createPartButton("Torso",
+                UDim2.fromOffset(torsoX, torsoY),
+                UDim2.fromOffset(torsoW, unit * 2), false)
+
+            createPartButton("Right Arm",
+                UDim2.fromOffset(rArmX, torsoY),
+                UDim2.fromOffset(armW, unit * 2), false)
+
+            createPartButton("HumanoidRootPart",
+                UDim2.fromOffset(hrpX, hrpY),
+                UDim2.fromOffset(hrpSize, hrpSize), true)
+
+            createPartButton("Left Leg",
+                UDim2.fromOffset(torsoX, legsY),
+                UDim2.fromOffset(legW, unit * 2), false)
+
+            createPartButton("Right Leg",
+                UDim2.fromOffset(torsoX + legW + gap, legsY),
+                UDim2.fromOffset(legW, unit * 2), false)
+        end
+
+        -- Build layout once the controlArea has size; use defer so AbsoluteSize is populated
+        task.defer(function()
+            if controlArea.Parent then
+                offsetX = math.max(0, math.floor((controlArea.AbsoluteSize.X - figureW) / 2))
+                buildLayout(offsetX)
+            end
+        end)
+
+        TrackConnection(groupBox.RenderHook:Connect(function(action, payload)
+            if action == "SetPart" then
+                if partButtons[payload] then
+                    groupBox.Value = payload
+                    refreshButtons()
+                end
+            end
+        end))
+
     else
         controlArea.Size = UDim2.new(1, 0, 0, Const.GroupBox.Padding * 2)
         controlArea.AutomaticSize = Enum.AutomaticSize.Y
@@ -3129,13 +3359,14 @@ function Renderer:MountGroupBox(groupBox)
         CollapseButton = collapseButton,
         BodyContainer = bodyContainer,
         ControlArea = controlArea,
+        RotationConnection = rotationConn,
     }
 
     RendererHelpers.ApplyGroupBoxCollapsedState(groupBox, false)
 
     TrackConnection(groupBox.RenderHook:Connect(function(action, payload)
         if action == "ChildAdded" then
-            if not groupBox.IsViewport then
+            if not groupBox.IsViewport and not groupBox.IsBodyPartPicker then
                 self:MountControl(groupBox, payload)
             end
             return
@@ -6512,6 +6743,10 @@ end
 
 function Library:AddViewportBox(name, columnName)
     return self.ActiveTab:AddViewportBox(name, columnName)
+end
+
+function Library:AddBodyPartBox(name, columnName)
+    return self.ActiveTab:AddBodyPartBox(name, columnName)
 end
 
 function Library:ToggleVisibility()
