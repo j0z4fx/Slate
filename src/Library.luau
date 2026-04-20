@@ -7912,8 +7912,8 @@ do
 
     local masterKey = ifaceGroup:AddKeyPicker("_SlateToggleKey", {
         Text    = "Toggle UI",
-        Default = "RightControl",
-        Mode    = "Always",
+        Default = "Insert",
+        Mode    = "Toggle",
         NoUI    = false,
     })
     masterKey.Clicked:Connect(newcclosure(function()
